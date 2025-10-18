@@ -1,5 +1,6 @@
 package com.example.application;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Schedule {
     
@@ -39,16 +40,33 @@ public class Schedule {
         return new_shift;
     }
 
-    public Shift edditShift(Date date, Time time, StudentWorker studentWorker)
+    public Shift findShift(Date date, int startTime, StudentWorker studentWorker)
     {
         for (Shift shift : shifts) {
-            if (shift.getD.equals(date) && shift.assigned_time.equals(time) && shift.studentWorker.equals(studentWorker)) {
+            if (shift.getDate().equals(date) && shift.getTime().getStart_time() == startTime && shift.getStudentWorker().equals(studentWorker)) {
                 return shift;
             }
         }
         return null; // Shift not found
-
-
-        
     }
+
+    public Shift removeShift(Date date, int startTime, StudentWorker studentWorker)
+    {
+        for (Shift shift : shifts) {
+            if (shift.getDate().equals(date) && shift.getTime().getStart_time() == startTime && shift.getStudentWorker().equals(studentWorker)) {
+                shifts.remove(shift);
+                return shift;
+            }
+        }
+        return null; // Shift not found
+    }
+
+    /**
+     * Return a copy of the shifts list for read-only listing.
+     */
+    public List<Shift> getShifts() {
+        return new ArrayList<>(shifts);
+    }
+
+
 }

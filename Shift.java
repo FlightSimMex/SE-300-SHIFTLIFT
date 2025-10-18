@@ -41,5 +41,12 @@ public class Shift {
         this.assigned_time = newTime;
     }
 
-    
+    public void changeDate(Date newDate) {
+        this.assigned_date = newDate;
+    }
+
+    public void changeStudentWorker(StudentWorker newWorker) {
+        this.assigned_Worker = newWorker;
+    }
+
 }

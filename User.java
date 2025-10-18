@@ -55,6 +55,17 @@ public abstract class User {
         return password;
     }
 
+    // Small setters to support editing from CLI
+    public void setPassword(String password) {
+        if (password == null || password.isEmpty()) throw new IllegalArgumentException("password cannot be null or empty");
+        this.password = password;
+    }
+
+    public void setEmail(String email) {
+        if (email == null || email.isEmpty()) throw new IllegalArgumentException("email cannot be null or empty");
+        this.email = email;
+    }
+
     
 
 }
