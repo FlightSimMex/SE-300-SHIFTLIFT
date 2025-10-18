@@ -15,4 +15,31 @@ public class Shift {
         this.assigned_workstation = workstation;
         this.assigned_Worker = worker;
     }
+
+
+    public Date getDate() {
+        return assigned_date;
+    }
+
+    public Time getTime() {
+        return assigned_time;
+    }
+
+    public StudentWorker getStudentWorker() {
+        return assigned_Worker;
+    }
+
+    public Workstation getWorkstation() {
+        return assigned_workstation;
+    }
+
+    public void changeWorkstation(Workstation newWorkstation) {
+        this.assigned_workstation = newWorkstation;
+    }
+
+    public void changeTime(Time newTime) {
+        this.assigned_time = newTime;
+    }
+
+    
 }
