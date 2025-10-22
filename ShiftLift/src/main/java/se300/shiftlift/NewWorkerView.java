@@ -40,6 +40,7 @@ public class NewWorkerView extends Composite<VerticalLayout> {
     private Button button_cancel = new Button();
     private Paragraph textSmall = new Paragraph();
     private VerticalLayout layoutColumn5 = new VerticalLayout();
+    private PasswordField newWorkerPassword = new PasswordField("Confirm Worker Password:");
 
 
     public NewWorkerView() {
@@ -59,6 +60,7 @@ public class NewWorkerView extends Composite<VerticalLayout> {
         h1.setText("Adding New Worker");
         layoutColumn2.setAlignSelf(FlexComponent.Alignment.CENTER, h1);
         h1.setWidth("max-content");
+        h1.getStyle().set("font-family", "Poppins, sans-serif");
         textMedium.setText(
                 "Please enter new worker information. Please enter a valid ERAU email, the new users username will be their email before the '@'. The assigned password can be changed later after user logs-in.");
         textMedium.setWidth("100%");
@@ -90,8 +92,10 @@ public class NewWorkerView extends Composite<VerticalLayout> {
         button_create.setText("Create Account");
         button_create.setWidth("min-content");
         button_create.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        button_create.getStyle().set("background-color", "#156fabff");
         button_cancel.setText("Cancel");
         button_cancel.setWidth("min-content");
+        button_cancel.getStyle().set("color", "grey");
         textSmall.setWidth("100%");
         textSmall.getStyle().set("font-size", "var(--lumo-font-size-xs)");
         layoutColumn5.getStyle().set("flex-grow", "1");
@@ -105,10 +109,14 @@ public class NewWorkerView extends Composite<VerticalLayout> {
         layoutColumn2.add(layoutColumn3);
         layoutColumn3.add(emailField);
         layoutColumn3.add(passwordField);
+        newWorkerPassword.setWidth("min-content");
+        layoutColumn3.add(newWorkerPassword);
         layoutColumn3.add(layoutRow2);
         layoutRow2.add(button_create);
         layoutRow2.add(button_cancel);
         layoutColumn3.add(textSmall);
+        
+        
         layoutRow.add(layoutColumn5);
 
         button_create.addClickListener(e -> {
@@ -125,17 +133,30 @@ public class NewWorkerView extends Composite<VerticalLayout> {
         try {
             if(emailField.isInvalid() || emailField.getValue().isEmpty()) {
                 emailField.setErrorMessage("Invalid Email");
+                emailField.setInvalid(true);
                 return;
             }else{
-                newWorker = new StudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
-                emailField.clear();
-                passwordField.clear();
-                textSmall.setText("Created new worker: " + newWorker.toString());
+                if(newWorkerPassword.getValue().equals(passwordField.getValue()))
+                {
+                    newWorker = new StudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
+                    emailField.clear();
+                    passwordField.clear();
+                    newWorkerPassword.clear();
+                    textSmall.setText("Created new worker: " + newWorker.toString());
+                }
+                else{
+                    passwordField.setErrorMessage("Passwords do not match!");
+                    passwordField.setInvalid(true);
+                    newWorkerPassword.setInvalid(true);
+                    newWorkerPassword.setErrorMessage("Passwords do not match!");
+                }
+                
             }
             
         } catch (IllegalArgumentException e) {
             emailField.setErrorMessage("Invalid Data");
             passwordField.clear();
+            newWorkerPassword.clear();
             return;
         }
     }
