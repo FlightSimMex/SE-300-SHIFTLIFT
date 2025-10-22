@@ -1,0 +1,18 @@
+{
+  "frontendFolder": "/Users/pablobandera/Documents/SE300/app/./src/main/frontend",
+  "themeFolder": "themes",
+  "themeResourceFolder": "/Users/pablobandera/Documents/SE300/app/./src/main/frontend/generated/jar-resources",
+  "staticOutput": "/Users/pablobandera/Documents/SE300/app/target/classes/META-INF/VAADIN/webapp/VAADIN/static",
+  "generatedFolder": "generated",
+  "statsOutput": "/Users/pablobandera/Documents/SE300/app/target/classes/META-INF/VAADIN/config",
+  "frontendBundleOutput": "/Users/pablobandera/Documents/SE300/app/target/classes/META-INF/VAADIN/webapp",
+  "devBundleOutput": "/Users/pablobandera/Documents/SE300/app/target/dev-bundle/webapp",
+  "devBundleStatsOutput": "/Users/pablobandera/Documents/SE300/app/target/dev-bundle/config",
+  "i18nOutput": "target/classes/vaadin-i18n",
+  "jarResourcesFolder": "/Users/pablobandera/Documents/SE300/app/./src/main/frontend/generated/jar-resources",
+  "themeName": "default",
+  "clientServiceWorkerSource": "/Users/pablobandera/Documents/SE300/app/target/sw.ts",
+  "pwaEnabled": false,
+  "offlineEnabled": false,
+  "offlinePath": "'offline.html'"
+}
