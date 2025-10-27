@@ -1,13 +1,37 @@
 package se300.shiftlift;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "users") //Name of the table that user information is stored in in the database
 public abstract class User {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @Column(name = "user_id") //Name of a specific column in the database that corresponds with the variable below
+    private Long id; //ID required for mySQL work
+    
+    @Column(name = "username")
     private String username;
-    private String initials;
-    private String email;
+
+    @Column(name = "password")
     private String password;
 
-    public  User(String email, String password)
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "initials")
+    private String initials;
+
+    protected User() { // Required for Hibernate
+    }
+
+    public User(String email, String password)
     {
         if(email == null || email.isEmpty() || password == null || password.isEmpty()) {
             throw new IllegalArgumentException("Email, password, and name cannot be null or empty");
