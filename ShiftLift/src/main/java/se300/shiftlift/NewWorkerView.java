@@ -1,5 +1,7 @@
 package se300.shiftlift;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -41,6 +43,8 @@ public class NewWorkerView extends Composite<VerticalLayout> {
     private Paragraph textSmall = new Paragraph();
     private VerticalLayout layoutColumn5 = new VerticalLayout();
     private PasswordField newWorkerPassword = new PasswordField("Confirm Worker Password:");
+    @Autowired
+    private UserService userService;
 
 
     public NewWorkerView() {
@@ -130,6 +134,7 @@ public class NewWorkerView extends Composite<VerticalLayout> {
 
     private void create_button_click_listener() {
         StudentWorker newWorker;
+        
         try {
             if(emailField.isInvalid() || emailField.getValue().isEmpty()) {
                 emailField.setErrorMessage("Invalid Email");
@@ -138,7 +143,11 @@ public class NewWorkerView extends Composite<VerticalLayout> {
             }else{
                 if(newWorkerPassword.getValue().equals(passwordField.getValue()))
                 {
+                    //Add new StudentWorker object to the running program
                     newWorker = new StudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
+                    //Add new student worker to database
+                    userService.createStudentWorker(newWorker.getEmail(), newWorker.getPassword());
+
                     emailField.clear();
                     passwordField.clear();
                     newWorkerPassword.clear();
