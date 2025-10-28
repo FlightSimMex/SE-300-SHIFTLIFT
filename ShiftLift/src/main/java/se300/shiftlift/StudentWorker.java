@@ -1,8 +1,11 @@
 package se300.shiftlift;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
 
-
+@Entity
 public class StudentWorker extends User{
+    @Transient
     private int max_hours = 20;
     private int scheduled_hours;
     //Shifts assigned to student worker
