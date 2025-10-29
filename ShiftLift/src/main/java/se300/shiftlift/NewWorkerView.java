@@ -3,6 +3,7 @@ package se300.shiftlift;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
@@ -139,19 +140,18 @@ public class NewWorkerView extends Composite<VerticalLayout> {
             if(emailField.isInvalid() || emailField.getValue().isEmpty()) {
                 emailField.setErrorMessage("Invalid Email");
                 emailField.setInvalid(true);
-                return;
+                
             }else{
                 if(newWorkerPassword.getValue().equals(passwordField.getValue()))
                 {
-                    //Add new StudentWorker object to the running program
-                    newWorker = new StudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
                     //Add new student worker to database
-                    userService.createStudentWorker(newWorker.getEmail(), newWorker.getPassword());
+                    userService.createStudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
 
                     emailField.clear();
                     passwordField.clear();
                     newWorkerPassword.clear();
-                    textSmall.setText("Created new worker: " + newWorker.toString());
+                    textSmall.setText("New worker account created successfully!");
+                    UI.getCurrent().navigate("");
                 }
                 else{
                     passwordField.setErrorMessage("Passwords do not match!");
@@ -166,7 +166,7 @@ public class NewWorkerView extends Composite<VerticalLayout> {
             emailField.setErrorMessage("Invalid Data");
             passwordField.clear();
             newWorkerPassword.clear();
-            return;
+            
         }
     }
 
