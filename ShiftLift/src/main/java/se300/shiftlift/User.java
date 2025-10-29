@@ -28,6 +28,9 @@ public abstract class User {
     @Column(name = "initials")
     private String initials;
 
+    @Column(name = "seniority")
+    private int seniority;
+
     protected User() { // Required for Hibernate
     }
 
