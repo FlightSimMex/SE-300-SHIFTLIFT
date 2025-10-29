@@ -41,7 +41,7 @@ public abstract class User {
 
             String [] emailParts = email.split("@");
             this.username = emailParts[0];
-            this.initials = get_first_inital(emailParts[0])+emailParts[0].charAt(0);
+            this.initials = (get_first_inital(emailParts[0])+emailParts[0].charAt(0)).toUpperCase();
             
         }
         
