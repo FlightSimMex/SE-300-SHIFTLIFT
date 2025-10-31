@@ -134,7 +134,6 @@ public class NewWorkerView extends Composite<VerticalLayout> {
     }
 
     private void create_button_click_listener() {
-        StudentWorker newWorker;
         
         try {
             if(emailField.isInvalid() || emailField.getValue().isEmpty()) {
@@ -145,12 +144,20 @@ public class NewWorkerView extends Composite<VerticalLayout> {
                 if(newWorkerPassword.getValue().equals(passwordField.getValue()))
                 {
                     //Add new student worker to database
-                    userService.createStudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
+                    try {
+                        userService.createStudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
+                    } catch (Exception e) {
+
+                        emailField.setErrorMessage("Email already exists");
+                        emailField.setInvalid(true);
+                        
+                    }
+                    
 
                     emailField.clear();
                     passwordField.clear();
                     newWorkerPassword.clear();
-                    textSmall.setText("New worker account created successfully!");
+                    //textSmall.setText("New worker account created successfully!");
                     UI.getCurrent().navigate("");
                 }
                 else{
@@ -173,6 +180,8 @@ public class NewWorkerView extends Composite<VerticalLayout> {
     private void cancel_button_click_listener() {
         emailField.clear();
         passwordField.clear();
+        newWorkerPassword.clear();
         textSmall.setText("");
+
     }
 }

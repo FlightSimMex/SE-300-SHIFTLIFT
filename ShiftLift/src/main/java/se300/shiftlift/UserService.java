@@ -12,14 +12,27 @@ public class UserService {
     
     UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
+        
     }
 
     //Creates a new Student Worker object and immediately adds it to a row in the users database
     @Transactional
     public void createStudentWorker(String email, String password) {
         StudentWorker studentWorker = new StudentWorker(email, password);
-        userRepository.saveAndFlush(studentWorker);
+       
+        if(!findByUsername(studentWorker.getUsername()).isEmpty()) {
+            
+            throw new IllegalArgumentException("Username already exists");
+           
+        }else{
+            userRepository.saveAndFlush(studentWorker);    
+        }
+        
     }
+
+    
+
+        
 
     //Returns a list of all users in the users database
     @Transactional(readOnly = true)
