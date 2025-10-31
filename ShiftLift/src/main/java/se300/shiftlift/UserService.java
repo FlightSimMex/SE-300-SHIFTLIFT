@@ -30,20 +30,18 @@ public class UserService {
         
     }
 
-    
-
-        
-
     //Returns a list of all users in the users database
     @Transactional(readOnly = true)
     public List<User> list(Pageable pageable) {
         return userRepository.findAllBy(pageable).toList();
     }
-
-    //Returns a list of all students with a certain username
-    //Does this have to return a list? I'll test
+    
     @Transactional(readOnly = true)
     public List<User> findByUsername(String username) {
-        return userRepository.findByUsername(username);
+        List<User> user = userRepository.findByUsername(username);
+        if (user.isEmpty()) {
+            return null;
+        }
+        return user;
     }
 }
