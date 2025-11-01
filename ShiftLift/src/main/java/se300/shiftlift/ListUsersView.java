@@ -218,18 +218,36 @@ public class ListUsersView extends VerticalLayout {
 
             userInfo.add(username, email);
 
-            HorizontalLayout row = new HorizontalLayout(avatar, userInfo);
+            // Create a seniority label to the right of the avatar
+            String seniorityText = "";
+            try {
+                int s = u.getSeniority();
+                if (s > 0) seniorityText = String.valueOf(s);
+            } catch (Exception ex) {
+                seniorityText = "";
+            }
+            Span senioritySpan = new Span(seniorityText);
+            senioritySpan.getStyle()
+                .set("font-weight", "600")
+                .set("color", "#000000")
+                .set("font-family", "Poppins, sans-serif")
+                .set("font-size", "16px");
+
+            // Place avatar, then expanding userInfo, then seniority at the far right
+            HorizontalLayout row = new HorizontalLayout(avatar, userInfo, senioritySpan);
             row.setWidth("560px"); // Slightly narrower than container
             row.setAlignItems(Alignment.CENTER);
             row.setHeight("90px"); // Increased height to match avatar circle
-            row.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.START);
+            row.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.BETWEEN);
+            // Make the middle column expand so the seniority stays aligned to the far right
+            row.expand(userInfo);
             row.getStyle()
                 .set("padding", "20px 24px")  // Increased vertical padding
                 .set("border-radius", "8px")
                 .set("margin", "4px 0")  // Added extra vertical margin
                 .set("min-height", "90px");
             avatar.getStyle()
-                .set("margin-right", "24px")
+                .set("margin-right", "16px")
                 .set("flex-shrink", "0"); // Prevent avatar from shrinking
 
             Button item = new Button(row);

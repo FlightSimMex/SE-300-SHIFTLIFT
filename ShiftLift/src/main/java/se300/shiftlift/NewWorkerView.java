@@ -66,6 +66,8 @@ public class NewWorkerView extends Composite<VerticalLayout> {
         layoutColumn2.setAlignSelf(FlexComponent.Alignment.CENTER, h1);
         h1.setWidth("max-content");
         h1.getStyle().set("font-family", "Poppins, sans-serif");
+    // Shiftlift blue title color
+    h1.getStyle().set("color", "#156fabff");
         textMedium.setText(
                 "Please enter new worker information. Please enter a valid ERAU email, the new users username will be their email before the '@'. The assigned password can be changed later after user logs-in.");
         textMedium.setWidth("100%");

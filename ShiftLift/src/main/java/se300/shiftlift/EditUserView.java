@@ -163,6 +163,8 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
         h12.setText("Edit User Data");
         h12.setWidth("max-content");
         h12.getStyle().set("font-family", "Poppins, sans-serif");
+    // Shiftlift blue title color
+    h12.getStyle().set("color", "#156fabff");
         layoutRow6.setWidthFull();
         //layoutColumn2.setFlexGrow(1.0, layoutRow6);
         layoutRow6.addClassName(Gap.MEDIUM);
