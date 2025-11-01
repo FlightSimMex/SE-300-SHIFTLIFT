@@ -10,6 +10,11 @@ public class StudentWorker extends User{
     private int scheduled_hours;
     //Shifts assigned to student worker
 
+    public StudentWorker()
+    {
+        
+    }
+
     public StudentWorker(String email, String password) {
         super(email, password);
     }

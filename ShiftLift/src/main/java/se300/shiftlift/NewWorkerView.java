@@ -150,6 +150,7 @@ public class NewWorkerView extends Composite<VerticalLayout> {
 
                         emailField.setErrorMessage("Email already exists");
                         emailField.setInvalid(true);
+                        return;
                         
                     }
                     
@@ -158,7 +159,7 @@ public class NewWorkerView extends Composite<VerticalLayout> {
                     passwordField.clear();
                     newWorkerPassword.clear();
                     //textSmall.setText("New worker account created successfully!");
-                    UI.getCurrent().navigate("");
+                    UI.getCurrent().navigate("list-users");
                 }
                 else{
                     passwordField.setErrorMessage("Passwords do not match!");
@@ -182,6 +183,6 @@ public class NewWorkerView extends Composite<VerticalLayout> {
         passwordField.clear();
         newWorkerPassword.clear();
         textSmall.setText("");
-
+        UI.getCurrent().navigate("list-users");
     }
 }

@@ -18,4 +18,7 @@ interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExec
     Slice<User> findAllBy(Pageable pageable);
     //Returns a list of all users with a given Username
     List<User> findByUsername(String username);
+    // Search by username containing (case-insensitive) with paging
+    Slice<User> findByUsernameContainingIgnoreCase(String username, Pageable pageable);
+    
 }

@@ -1,9 +1,15 @@
 package se300.shiftlift;
 
+import java.util.List;
+
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
@@ -11,6 +17,8 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility.Gap;
@@ -21,7 +29,7 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("EditUserView")
 @Route("EditUserView")
 @RolesAllowed("ADMIN")
-public class EditUserView extends Composite<VerticalLayout> {
+public class EditUserView extends Composite<VerticalLayout> implements BeforeEnterObserver, com.vaadin.flow.router.BeforeLeaveObserver {
 
 
     private HorizontalLayout layoutRow3 = new HorizontalLayout();
@@ -45,14 +53,87 @@ public class EditUserView extends Composite<VerticalLayout> {
     private VerticalLayout layoutRowButtons = new VerticalLayout();
 
     private User user;
-
+    private final UserService userService;
+    private boolean dirty = false;
     
-    public EditUserView() {
-        
-        
+    public EditUserView(UserService userService) {
+        this.userService = userService;
         create_elements();
-        
+        // fields are created; if opened directly with a username query param, beforeEnter will load
+        // track changes to detect unsaved edits
+        emailTextField.addValueChangeListener(e -> {
+            dirty = true;
+            // Preview the username and initials changes
+            String email = e.getValue();
+            if (email != null && !email.isEmpty() && email.contains("@")) {
+                String[] emailParts = email.split("@");
+                String username = emailParts[0];
+                usernameTextField.setValue(username);
+                
+                // Use the same initials logic as the User class
+                String initials = (User.get_first_inital(username) + username.charAt(0)).toUpperCase();
+                initialsTextField.setValue(initials);
+            }
+        });
+        passwordField.addValueChangeListener(e -> dirty = true);
+    }
 
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        java.util.List<String> params = event.getLocation().getQueryParameters().getParameters().get("username");
+        if (params != null && !params.isEmpty()) {
+            String username = params.get(0);
+            if (username != null && !username.isEmpty()) {
+                loadUserByUsername(username);
+            }
+        }
+    }
+
+    @Override
+    public void beforeLeave(com.vaadin.flow.router.BeforeLeaveEvent event) {
+        if (!dirty) return;
+        final com.vaadin.flow.router.BeforeLeaveEvent.ContinueNavigationAction action = event.postpone();
+        Dialog confirm = new Dialog();
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialogLayout.setPadding(true);
+        dialogLayout.setSpacing(true);
+        dialogLayout.setAlignItems(Alignment.CENTER);
+        
+        Span message = new Span("You have unsaved changes. Leave without saving?");
+        message.getStyle().set("margin", "16px 0");
+        dialogLayout.add(message);
+        
+        HorizontalLayout buttonLayout = new HorizontalLayout();
+        buttonLayout.setSpacing(true);
+        buttonLayout.setJustifyContentMode(JustifyContentMode.CENTER);
+        
+        com.vaadin.flow.component.button.Button leave = new com.vaadin.flow.component.button.Button("Leave", ev -> {
+            confirm.close();
+            action.proceed();
+        });
+        leave.getStyle()
+            .set("margin-right", "16px")
+            .set("color", "#666666");
+        
+        com.vaadin.flow.component.button.Button stay = new com.vaadin.flow.component.button.Button("Stay", ev -> {
+            confirm.close();
+        });
+        stay.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        stay.getStyle().set("background-color", "#156fabff");
+        
+        buttonLayout.add(leave, stay);
+        dialogLayout.add(buttonLayout);
+        confirm.add(dialogLayout);
+        confirm.open();
+    }
+
+    public void loadUserByUsername(String username) {
+        List<User> users = userService.findByUsername(username);
+        if (!users.isEmpty()) {
+            this.user = users.get(0);
+            setUserData(this.user);
+            dirty = false;
+        }
     }
 
 
@@ -60,6 +141,7 @@ public class EditUserView extends Composite<VerticalLayout> {
     private void setUserData(User user) {
         emailTextField.setValue(user.getEmail());
         usernameTextField.setValue(user.getUsername());
+        usernameTextField.getStyle().set("color", "#156fabff");
         initialsTextField.setValue(user.getInitials());
         passwordField.setValue(user.getPassword());
     }
@@ -193,29 +275,71 @@ public class EditUserView extends Composite<VerticalLayout> {
     private void save_button_click_listener() 
     {
         if(validateFields()) {
-            // Save changes to user data
-            //Submit user data
-            User tempUser = new StudentWorker(
-                emailTextField.getValue().toLowerCase(),
-                passwordField.getValue()
-            );
-            // tempUser.setUsername(usernameTextField.getValue());
-            // tempUser.setInitials(initialsTextField.getValue().toUpperCase());
+            if (user != null) {
+                try {
+                    // Email update will automatically update username and initials
+                    user.setEmail(emailTextField.getValue().toLowerCase());
+                    user.setPassword(passwordField.getValue());
+                    userService.save(user);
+                    dirty = false;
+                    Notification.show("User saved", 2000, Notification.Position.BOTTOM_START);
+                    // Navigate back to list-users after successful save
+                    UI.getCurrent().navigate("list-users");
+                } catch (Exception e) {
+                    Notification.show("Error saving user: " + e.getMessage(), 
+                        3000, Notification.Position.MIDDLE);
+                }
+            }
         }   
     }
 
     private void cancel_button_click_listener() 
     {
-        // Revert changes to user data
-        emailTextField.clear();
-        usernameTextField.clear();
-        initialsTextField.clear();
-        passwordField.clear();
+        // Clear dirty flag and navigate back
+        dirty = false;
+        UI.getCurrent().navigate("list-users");
     }
 
     private void delete_button_click_listener() 
     {
-        //Delete User
+        if (user == null) return;
+        Dialog confirm = new Dialog();
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialogLayout.setPadding(true);
+        dialogLayout.setSpacing(true);
+        dialogLayout.setAlignItems(Alignment.CENTER);
         
+        Span message = new Span("Are you sure you want to delete user '" + user.getUsername() + "'?");
+        message.getStyle()
+            .set("margin", "16px 0")
+            .set("font-family", "Poppins, sans-serif");
+        dialogLayout.add(message);
+        
+        HorizontalLayout buttonLayout = new HorizontalLayout();
+        buttonLayout.setSpacing(true);
+        buttonLayout.setJustifyContentMode(JustifyContentMode.CENTER);
+        
+        com.vaadin.flow.component.button.Button no = new com.vaadin.flow.component.button.Button("Cancel", ev -> confirm.close());
+        no.getStyle()
+            .set("margin-right", "16px")
+            .set("color", "#666666");
+        
+        com.vaadin.flow.component.button.Button yes = new com.vaadin.flow.component.button.Button("Delete", ev -> {
+            userService.delete(user);
+            confirm.close();
+            dirty = false;
+            Notification.show("User deleted", 2000, Notification.Position.BOTTOM_START);
+            UI.getCurrent().navigate("list-users");
+        });
+        yes.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        yes.getStyle()
+            .set("background-color", "#9b0000ff")
+            .set("color", "white");
+        
+        buttonLayout.add(no, yes);
+        dialogLayout.add(buttonLayout);
+        confirm.add(dialogLayout);
+        confirm.open();
+        confirm.open();
     }
 }

@@ -45,12 +45,13 @@ public abstract class User {
             String [] emailParts = email.split("@");
             this.username = emailParts[0];
             this.initials = (get_first_inital(emailParts[0])+emailParts[0].charAt(0)).toUpperCase();
+            this.seniority = -1;
             
         }
         
     }
 
-    private String get_first_inital(String username)
+    protected static String get_first_inital(String username)
     {
         if (username == null || username.isEmpty()) {
             return "";
@@ -82,6 +83,12 @@ public abstract class User {
         return password;
     }
 
+    public int getSeniority() {
+        return seniority;
+    }
+
+
+
     // Small setters to support editing from CLI
     public void setPassword(String password) {
         if (password == null || password.isEmpty()) throw new IllegalArgumentException("password cannot be null or empty");
@@ -91,6 +98,15 @@ public abstract class User {
     public void setEmail(String email) {
         if (email == null || email.isEmpty()) throw new IllegalArgumentException("email cannot be null or empty");
         this.email = email;
+        
+        // Update username and initials when email changes
+        String[] emailParts = email.split("@");
+        this.username = emailParts[0];
+        this.initials = (get_first_inital(emailParts[0])+emailParts[0].charAt(0)).toUpperCase();
+    }
+
+    public void setSeniorityNumber(int seniority) {
+        this.seniority = seniority;
     }
 
     
