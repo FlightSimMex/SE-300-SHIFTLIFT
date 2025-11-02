@@ -41,6 +41,8 @@ public class UserService {
             String uniqueInitials = generateUniqueInitials(studentWorker.getUsername());
             studentWorker.setInitials(uniqueInitials);
 
+            // Hash password before saving
+            studentWorker.setPassword(PasswordUtil.hash(studentWorker.getPassword()));
             userRepository.saveAndFlush(studentWorker);
         }
         
@@ -60,6 +62,8 @@ public class UserService {
             String uniqueInitials = generateUniqueInitials(manager.getUsername());
             manager.setInitials(uniqueInitials);
 
+            // Hash password before saving
+            manager.setPassword(PasswordUtil.hash(manager.getPassword()));
             userRepository.saveAndFlush(manager);
         }
     }
@@ -88,7 +92,21 @@ public class UserService {
 
     @Transactional
     public User save(User user) {
+        // Ensure password is hashed if not already
+        if (user.getPassword() != null && !PasswordUtil.isBcryptHash(user.getPassword())) {
+            user.setPassword(PasswordUtil.hash(user.getPassword()));
+        }
         return userRepository.saveAndFlush(user);
+    }
+
+    @Transactional
+    public void changePassword(User user, String currentPlain, String newPlain) {
+        if (user == null) throw new IllegalArgumentException("No user");
+        if (!PasswordUtil.matches(currentPlain, user.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+        user.setPassword(PasswordUtil.hash(newPlain));
+        userRepository.saveAndFlush(user);
     }
 
     @Transactional

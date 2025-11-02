@@ -9,9 +9,12 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
@@ -21,7 +24,7 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("List Users")
 @Route("list-users")
 @RolesAllowed("ADMIN")
-public class ListUsersView extends VerticalLayout {
+public class ListUsersView extends VerticalLayout implements BeforeEnterObserver {
 
     private final UserService userService;
     private final VerticalLayout listLayout = new VerticalLayout();
@@ -46,6 +49,14 @@ public class ListUsersView extends VerticalLayout {
             .set("font-family", "Poppins, sans-serif")
             .set("font-size", "48px")
             .set("margin-bottom", "24px");
+    Button logoutBtn = new Button("Logout");
+    logoutBtn.getStyle().set("color", "#666666");
+    logoutBtn.addClickListener(e -> Auth.logoutToLogin());
+    // Keep title centered; put Logout in its own right-aligned bar
+    HorizontalLayout topBar = new HorizontalLayout(logoutBtn);
+    topBar.setWidthFull();
+    topBar.setAlignItems(FlexComponent.Alignment.CENTER);
+    topBar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
 
         searchField.setPlaceholder("Search by username...");
         searchField.setClearButtonVisible(true);
@@ -85,8 +96,9 @@ public class ListUsersView extends VerticalLayout {
             .set("font-family", "Poppins, sans-serif");
 
         // Add navigation handlers
-        newUserButton.addClickListener(e -> UI.getCurrent().navigate("NewWorker"));
-        returnButton.addClickListener(e -> UI.getCurrent().navigate(""));
+    newUserButton.addClickListener(e -> UI.getCurrent().navigate("NewWorker"));
+    // Return to the Main Menu view
+    returnButton.addClickListener(e -> UI.getCurrent().navigate(MainMenuView.class));
         
         editButton.addClickListener(e -> {
             if (selectedItem != null) {
@@ -165,17 +177,25 @@ public class ListUsersView extends VerticalLayout {
             }
         });
 
-        // Create main content container
-        VerticalLayout contentLayout = new VerticalLayout(title, searchLayout, listLayout, bottomLayout);
+        // Create main content container (exclude topBar so we can place it at the very top like MainMenu)
+    VerticalLayout contentLayout = new VerticalLayout(title, searchLayout, listLayout, bottomLayout);
         contentLayout.setSizeFull();
         contentLayout.setSpacing(true);
         contentLayout.setPadding(true);
         contentLayout.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        // Add both background and content
-        add(background, contentLayout);
+        // Add the top bar first so its position matches MainMenu, then background and content
+        add(topBar, background, contentLayout);
 
         loadUsers(currentQuery, currentPage);
+    }
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (!Auth.isLoggedIn() || !Auth.isAdmin()) {
+            Notification.show("Access denied: Admins only", 2000, Notification.Position.MIDDLE);
+            event.rerouteTo("");
+        }
     }
 
     private void loadUsers(String query, int page) {

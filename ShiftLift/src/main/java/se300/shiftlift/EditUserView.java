@@ -80,6 +80,11 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        if (!Auth.isLoggedIn() || !Auth.isAdmin()) {
+            Notification.show("Access denied: Admins only", 2000, Notification.Position.MIDDLE);
+            event.rerouteTo("");
+            return;
+        }
         java.util.List<String> params = event.getLocation().getQueryParameters().getParameters().get("username");
         if (params != null && !params.isEmpty()) {
             String username = params.get(0);
@@ -225,27 +230,43 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
         layoutColumn9.getStyle().set("flex-grow", "1");
         layoutRow8.addClassName(Gap.MEDIUM);
         layoutRow8.setWidth("100%");
-        layoutRow8.setHeight("min-content");
-        getContent().add(layoutRow3);
-        getContent().add(layoutRow5);
+    layoutRow8.setHeight("min-content");
+    // Add a right-aligned top bar for Logout at the very top (to match MainMenu)
+    Button logoutBtn = new Button("Logout");
+    logoutBtn.getStyle().set("color", "#666666");
+    logoutBtn.addClickListener(e -> Auth.logoutToLogin());
+    HorizontalLayout topBar = new HorizontalLayout(logoutBtn);
+    topBar.setWidthFull();
+    topBar.setAlignItems(Alignment.CENTER);
+    topBar.setJustifyContentMode(JustifyContentMode.END);
+    topBar.setPadding(false);
+    topBar.setSpacing(false);
+    topBar.getStyle().set("margin", "0");
+    getContent().add(topBar);
+
+    getContent().add(layoutRow3);
+    getContent().add(layoutRow5);
         layoutRow5.add(layoutColumn5);
         layoutRow5.add(layoutColumn7);
+        // keep title centered and with consistent bottom margin
+        h12.getStyle().set("margin", "0 0 24px 0");
         layoutColumn7.add(h12);
         layoutColumn7.add(layoutRow6);
         layoutRow6.add(layoutColumn8);
         layoutColumn8.add(emailTextField);
         layoutColumn8.add(usernameTextField);
+    
         layoutColumn8.add(initialsTextField);
         layoutColumn8.add(passwordField);
         layoutColumn8.add(layoutRowButtons);
         
-        layoutRow7.add(button_save);
-        layoutRow7.add(button_cancel);
-        layoutRowButtons.add(button_delete);
-        layoutRowButtons.add(layoutRow7);
+    layoutRow7.add(button_save);
+    layoutRow7.add(button_cancel);
+    layoutRowButtons.add(button_delete);
+    layoutRowButtons.add(layoutRow7);
+    layoutRow5.add(layoutColumn9);
+    getContent().add(layoutRow8);
     
-        layoutRow5.add(layoutColumn9);
-        getContent().add(layoutRow8);
     }
 
     private boolean validateFields() {

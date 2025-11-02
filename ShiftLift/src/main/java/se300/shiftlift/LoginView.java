@@ -1,22 +1,24 @@
 package se300.shiftlift;
 
+import java.util.List;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
-
-@Route("Login")
+@Route("")
 
 public class LoginView extends VerticalLayout {
 
-    private LoginRepo repo;
+    private final UserRepository userRepository;
 
-    public LoginView(LoginRepo repo) {
-        this.repo = repo;
+    public LoginView(UserRepository userRepository) {
+        this.userRepository = userRepository;
         H1 loginTitle = new H1("ShiftLift");
         loginTitle.getStyle()
             .set("color", "#156fabff")
@@ -27,44 +29,70 @@ public class LoginView extends VerticalLayout {
         add(loginTitle);
         setHorizontalComponentAlignment(Alignment.CENTER, loginTitle);
 
-        H1 userInputTitle = new H1("Username:");
-        userInputTitle.getStyle()
-            .set("color", "#00070cff")
-            .set("font-family", "Poppins, sans-serif")  //font
-            .set("font-size", "25px");       //size  
-
-        H1 userPasswordTitle = new H1("Password:");
-        userPasswordTitle.getStyle()
-            .set("color", "#00070cff")
-            .set("font-family", "Poppins, sans-serif")  //font
-            .set("font-size", "25px");       //size
-
-        var inputUser = new TextField();
-        var inputPassword = new PasswordField();
-        var changePassword = new Button("Change Password");
+        var inputUser = new TextField("Username");
+        var inputPassword = new PasswordField("Password");
+        
+        // Set width for input fields
+        inputUser.setWidth("300px");
+        inputPassword.setWidth("300px");
+        
         var loginButton = new Button("Login");
         loginButton.getStyle()
             .set("background-color", "#156fabff")
             .set("color", "white");
+        loginButton.setWidth("300px");
+            
+        var changePassword = new Button("Change Password");
+        changePassword.getStyle()
+            .set("color", "gray");
+        changePassword.setWidth("300px");
         
         VerticalLayout layout = new VerticalLayout();
-
-        HorizontalLayout userRow = new HorizontalLayout(userInputTitle, inputUser);
-        HorizontalLayout passwordRow = new HorizontalLayout(userPasswordTitle, inputPassword);
-        HorizontalLayout buttonRow = new HorizontalLayout(changePassword, loginButton);
-
-        userRow.setJustifyContentMode(JustifyContentMode.CENTER);
-        passwordRow.setJustifyContentMode(JustifyContentMode.CENTER);
-        buttonRow.setJustifyContentMode(JustifyContentMode.CENTER);
-
-        userRow.setAlignItems(FlexComponent.Alignment.BASELINE);
-        passwordRow.setAlignItems(FlexComponent.Alignment.BASELINE);
-
-        layout.add(userRow, passwordRow, buttonRow);
+        layout.setSpacing(true);
+        layout.setPadding(false);
+        layout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
+        layout.add(inputUser, inputPassword, loginButton, changePassword);
 
         add(layout);
 
-        layout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
         layout.setWidthFull();
+
+        loginButton.addClickListener(e -> {
+            String username = inputUser.getValue();
+            String password = inputPassword.getValue();
+
+            if (username.isEmpty() || password.isEmpty()) {
+                Notification.show("Please enter both username and password")
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                return;
+            }
+
+            List<User> users = userRepository.findByUsername(username);
+            if (users.isEmpty()) {
+                Notification.show("User not found")
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            } else {
+                User user = users.get(0); // Get the first user (usernames should be unique)
+                if (PasswordUtil.matches(password, user.getPassword())) {
+                    // Successful login: store in session and navigate
+                    Auth.setCurrentUser(user);
+                    getUI().ifPresent(ui -> ui.navigate(MainMenuView.class));
+                } else {
+                    Notification.show("Invalid password")
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                }
+            }
+        });
+
+        // Remove insecure change-password-from-login behavior.
+        changePassword.setText("Change Password");
+        changePassword.addClickListener(e -> {
+            if (!Auth.isLoggedIn()) {
+                Notification.show("Please log in to change your password")
+                    .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+                return;
+            }
+            getUI().ifPresent(ui -> ui.navigate(ChangePasswordView.class));
+        });
     }
 }
