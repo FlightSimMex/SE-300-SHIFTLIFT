@@ -19,6 +19,7 @@ public class UserService {
     @Transactional
     public void createStudentWorker(String email, String password) {
         StudentWorker studentWorker = new StudentWorker(email, password);
+        // student workers get seniority assigned below; no role column required (use instanceof / discriminator)
        
         if(!findByUsername(studentWorker.getUsername()).isEmpty()) {
             
@@ -35,10 +36,32 @@ public class UserService {
 
             // New user gets lowest seniority number (max + 1)
             studentWorker.setSeniorityNumber(maxSeniority + 1);
+            
+            // Generate and set unique initials
+            String uniqueInitials = generateUniqueInitials(studentWorker.getUsername());
+            studentWorker.setInitials(uniqueInitials);
 
             userRepository.saveAndFlush(studentWorker);
         }
         
+    }
+
+    //Creates a new Manager (admin) user and saves to database
+    @Transactional
+    public void createManagerUser(String email, String password) {
+        ManagerUser manager = new ManagerUser(email, password);
+
+        if(!findByUsername(manager.getUsername()).isEmpty()) {
+            throw new IllegalArgumentException("Username already exists");
+        } else {
+            // Managers do not participate in seniority numbering
+            
+            // Generate and set unique initials
+            String uniqueInitials = generateUniqueInitials(manager.getUsername());
+            manager.setInitials(uniqueInitials);
+
+            userRepository.saveAndFlush(manager);
+        }
     }
 
     
@@ -99,5 +122,33 @@ public class UserService {
     @Transactional(readOnly = true)
     public long count() {
         return userRepository.count();
+    }
+
+    // Generate unique initials for a new user
+    private String generateUniqueInitials(String username) {
+        String baseInitials = (User.get_first_inital(username) + username.charAt(0)).toUpperCase();
+        List<User> usersWithSameInitials = userRepository.findByInitials(baseInitials);
+        
+        if (usersWithSameInitials.isEmpty()) {
+            return baseInitials;
+        }
+        
+        // Find the highest number suffix used
+        int maxNumber = usersWithSameInitials.stream()
+            .map(User::getInitials)
+            .filter(i -> i.startsWith(baseInitials))
+            .map(i -> i.substring(baseInitials.length()))
+            .filter(suffix -> !suffix.isEmpty())
+            .map(suffix -> {
+                try {
+                    return Integer.parseInt(suffix);
+                } catch (NumberFormatException e) {
+                    return 0;
+                }
+            })
+            .max(Integer::compareTo)
+            .orElse(0);
+            
+        return baseInitials + (maxNumber + 1);
     }
 }

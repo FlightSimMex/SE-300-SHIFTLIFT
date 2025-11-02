@@ -14,6 +14,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.PageTitle;
@@ -44,6 +45,7 @@ public class NewWorkerView extends Composite<VerticalLayout> {
     private Paragraph textSmall = new Paragraph();
     private VerticalLayout layoutColumn5 = new VerticalLayout();
     private PasswordField newWorkerPassword = new PasswordField("Confirm Worker Password:");
+    private RadioButtonGroup<String> roleSelector = new RadioButtonGroup<>();
     @Autowired
     private UserService userService;
 
@@ -118,6 +120,10 @@ public class NewWorkerView extends Composite<VerticalLayout> {
         layoutColumn3.add(passwordField);
         newWorkerPassword.setWidth("min-content");
         layoutColumn3.add(newWorkerPassword);
+        roleSelector.setLabel("Role:");
+        roleSelector.setItems("Student", "Manager");
+        roleSelector.setValue("Student");
+        layoutColumn3.add(roleSelector);
         layoutColumn3.add(layoutRow2);
         layoutRow2.add(button_create);
         layoutRow2.add(button_cancel);
@@ -147,7 +153,11 @@ public class NewWorkerView extends Composite<VerticalLayout> {
                 {
                     //Add new student worker to database
                     try {
-                        userService.createStudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
+                        if ("Manager".equals(roleSelector.getValue())) {
+                            userService.createManagerUser(emailField.getValue().toLowerCase(), passwordField.getValue());
+                        } else {
+                            userService.createStudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
+                        }
                     } catch (Exception e) {
 
                         emailField.setErrorMessage("Email already exists");

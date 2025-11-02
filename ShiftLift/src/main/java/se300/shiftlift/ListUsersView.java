@@ -219,22 +219,25 @@ public class ListUsersView extends VerticalLayout {
             userInfo.add(username, email);
 
             // Create a seniority label to the right of the avatar
-            String seniorityText = "";
-            try {
+            String labelText;
+            String labelColor;
+            if (u instanceof ManagerUser) {
+                labelText = "Manager";
+                labelColor = "#156fabff"; // ShiftLift blue color for Manager tag
+            } else {
                 int s = u.getSeniority();
-                if (s > 0) seniorityText = String.valueOf(s);
-            } catch (Exception ex) {
-                seniorityText = "";
+                labelText = s > 0 ? String.valueOf(s) : "";
+                labelColor = "#000000"; // Black for seniority numbers
             }
-            Span senioritySpan = new Span(seniorityText);
-            senioritySpan.getStyle()
+            Span labelSpan = new Span(labelText);
+            labelSpan.getStyle()
                 .set("font-weight", "600")
-                .set("color", "#000000")
+                .set("color", labelColor)
                 .set("font-family", "Poppins, sans-serif")
                 .set("font-size", "16px");
 
-            // Place avatar, then expanding userInfo, then seniority at the far right
-            HorizontalLayout row = new HorizontalLayout(avatar, userInfo, senioritySpan);
+            // Place avatar, then expanding userInfo, then label (Manager/seniority) at the far right
+            HorizontalLayout row = new HorizontalLayout(avatar, userInfo, labelSpan);
             row.setWidth("560px"); // Slightly narrower than container
             row.setAlignItems(Alignment.CENTER);
             row.setHeight("90px"); // Increased height to match avatar circle

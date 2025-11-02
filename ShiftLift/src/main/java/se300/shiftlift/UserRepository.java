@@ -21,4 +21,6 @@ interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExec
     // Search by username containing (case-insensitive) with paging
     Slice<User> findByUsernameContainingIgnoreCase(String username, Pageable pageable);
     
+    // Find users with matching initials
+    List<User> findByInitials(String initials);
 }
