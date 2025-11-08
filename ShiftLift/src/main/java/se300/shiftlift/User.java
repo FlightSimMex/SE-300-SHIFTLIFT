@@ -1,19 +1,25 @@
 package se300.shiftlift;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users") //Name of the table that user information is stored in in the database
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "dtype")
 public abstract class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     @Column(name = "user_id") //Name of a specific column in the database that corresponds with the variable below
+    @SuppressWarnings("unused")
     private Long id; //ID required for mySQL work
     
     @Column(name = "username")
@@ -44,11 +50,10 @@ public abstract class User {
 
             String [] emailParts = email.split("@");
             this.username = emailParts[0];
-            this.initials = (get_first_inital(emailParts[0])+emailParts[0].charAt(0)).toUpperCase();
+            // Initials will be set by service layer to ensure uniqueness
+            this.initials = "";
             this.seniority = -1;
-            
         }
-        
     }
 
     protected static String get_first_inital(String username)
@@ -89,6 +94,7 @@ public abstract class User {
 
 
 
+
     // Small setters to support editing from CLI
     public void setPassword(String password) {
         if (password == null || password.isEmpty()) throw new IllegalArgumentException("password cannot be null or empty");
@@ -99,10 +105,15 @@ public abstract class User {
         if (email == null || email.isEmpty()) throw new IllegalArgumentException("email cannot be null or empty");
         this.email = email;
         
-        // Update username and initials when email changes
+        // Update username when email changes
         String[] emailParts = email.split("@");
         this.username = emailParts[0];
-        this.initials = (get_first_inital(emailParts[0])+emailParts[0].charAt(0)).toUpperCase();
+        // Initials will be updated by service layer
+    }
+
+    // Allow service layer to set initials
+    void setInitials(String initials) {
+        this.initials = initials;
     }
 
     public void setSeniorityNumber(int seniority) {

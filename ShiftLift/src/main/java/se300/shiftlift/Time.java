@@ -1,9 +1,12 @@
 package se300.shiftlift;
 
+import jakarta.persistence.Embeddable;
+
+@Embeddable
 public class Time {
 
-    private final int OPENING_TIME = 800;
-    private final int CLOSING_TIME = 1700;
+    public static final int OPENING_TIME = 800;
+    public static final int CLOSING_TIME = 1700;
 
     private int start_time;
     private int end_time;
@@ -17,6 +20,11 @@ public class Time {
             this.start_time = start_time;
             this.end_time = end_time;
         }
+    }
+
+    public Time() {
+        this.start_time = OPENING_TIME;
+        this.end_time = CLOSING_TIME;
     }
 
     public int getStart_time() {
@@ -48,6 +56,27 @@ public class Time {
     }
     private boolean end_time_is_valid(int end_time) {
         return end_time <= CLOSING_TIME && end_time > OPENING_TIME;
+    }
+    
+    @Override
+    public String toString() {
+        return formatTime(start_time) + " - " + formatTime(end_time);
+    }
+    
+    private String formatTime(int time) {
+        int hours = time / 100;
+        int minutes = time % 100;
+        String period = hours < 12 ? "AM" : "PM";
+        
+        // Convert to 12-hour format
+        int displayHours = hours;
+        if (hours == 0) {
+            displayHours = 12;
+        } else if (hours > 12) {
+            displayHours = hours - 12;
+        }
+        
+        return String.format("%d:%02d %s", displayHours, minutes, period);
     }
     
 }

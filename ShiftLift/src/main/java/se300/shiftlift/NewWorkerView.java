@@ -9,13 +9,17 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility.Gap;
@@ -26,7 +30,7 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("New Worker")
 @Route("NewWorker")
 @RolesAllowed("ADMIN")
-public class NewWorkerView extends Composite<VerticalLayout> {
+public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEnterObserver {
 
     private HorizontalLayout layoutRow3 = new HorizontalLayout();
     private HorizontalLayout layoutRow = new HorizontalLayout();
@@ -44,6 +48,7 @@ public class NewWorkerView extends Composite<VerticalLayout> {
     private Paragraph textSmall = new Paragraph();
     private VerticalLayout layoutColumn5 = new VerticalLayout();
     private PasswordField newWorkerPassword = new PasswordField("Confirm Worker Password:");
+    private RadioButtonGroup<String> roleSelector = new RadioButtonGroup<>();
     @Autowired
     private UserService userService;
 
@@ -82,10 +87,10 @@ public class NewWorkerView extends Composite<VerticalLayout> {
         layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, emailField);
         emailField.setWidth("min-content");
         emailField.getElement().setAttribute("name", "email");
-        emailField.setPlaceholder("username@my.erau.edu");
-        emailField.setErrorMessage("Please enter a valid example@my.erau.edu email address");
+        emailField.setPlaceholder("username@erau.edu");
+        emailField.setErrorMessage("Please enter a valid example@erau.edu email address");
         emailField.setClearButtonVisible(true);
-        emailField.setPattern("^.+@my.erau.edu$");
+        emailField.setPattern("^.+@erau.edu$");
         passwordField.setLabel("New Worker Password:");
         layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, passwordField);
         passwordField.setWidth("min-content");
@@ -106,10 +111,25 @@ public class NewWorkerView extends Composite<VerticalLayout> {
         textSmall.setWidth("100%");
         textSmall.getStyle().set("font-size", "var(--lumo-font-size-xs)");
         layoutColumn5.getStyle().set("flex-grow", "1");
-        getContent().add(layoutRow3);
-        getContent().add(layoutRow);
+    // Add a right-aligned top bar for Logout at the very top (to match MainMenu)
+    Button logoutBtn = new Button("Logout");
+    logoutBtn.getStyle().set("color", "#666666");
+    logoutBtn.addClickListener(e -> Auth.logoutToLogin());
+    HorizontalLayout topBar = new HorizontalLayout(logoutBtn);
+    topBar.setWidthFull();
+    topBar.setAlignItems(Alignment.CENTER);
+    topBar.setJustifyContentMode(JustifyContentMode.END);
+    topBar.setPadding(false);
+    topBar.setSpacing(false);
+    topBar.getStyle().set("margin", "0");
+    getContent().add(topBar);
+
+    getContent().add(layoutRow3);
+    getContent().add(layoutRow);
         layoutRow.add(layoutColumn4);
         layoutRow.add(layoutColumn2);
+        // keep title centered and with consistent bottom margin
+        h1.getStyle().set("margin", "0 0 24px 0");
         layoutColumn2.add(h1);
         layoutColumn2.add(textMedium);
         layoutColumn2.add(hr);
@@ -118,6 +138,10 @@ public class NewWorkerView extends Composite<VerticalLayout> {
         layoutColumn3.add(passwordField);
         newWorkerPassword.setWidth("min-content");
         layoutColumn3.add(newWorkerPassword);
+        roleSelector.setLabel("Role:");
+        roleSelector.setItems("Student", "Manager");
+        roleSelector.setValue("Student");
+        layoutColumn3.add(roleSelector);
         layoutColumn3.add(layoutRow2);
         layoutRow2.add(button_create);
         layoutRow2.add(button_cancel);
@@ -135,6 +159,14 @@ public class NewWorkerView extends Composite<VerticalLayout> {
         });
     }
 
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (!Auth.isLoggedIn() || !Auth.isAdmin()) {
+            Notification.show("Access denied: Admins only", 2000, Notification.Position.MIDDLE);
+            event.rerouteTo("");
+        }
+    }
+
     private void create_button_click_listener() {
         
         try {
@@ -147,7 +179,11 @@ public class NewWorkerView extends Composite<VerticalLayout> {
                 {
                     //Add new student worker to database
                     try {
-                        userService.createStudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
+                        if ("Manager".equals(roleSelector.getValue())) {
+                            userService.createManagerUser(emailField.getValue().toLowerCase(), passwordField.getValue());
+                        } else {
+                            userService.createStudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
+                        }
                     } catch (Exception e) {
 
                         emailField.setErrorMessage("Email already exists");
