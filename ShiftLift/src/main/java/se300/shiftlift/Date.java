@@ -1,15 +1,20 @@
 package se300.shiftlift;
 
 public class Date {
+    @SuppressWarnings("FieldMayBeFinal")
     private int day;
+    @SuppressWarnings("FieldMayBeFinal")
     private int month;
+    @SuppressWarnings("FieldMayBeFinal")
     private int year;
+    private boolean open;
 
     //Missing input validation
     public Date(int day, int month, int year) {
         this.day = day;
         this.month = month;
         this.year = year;
+        this.open = true;
     }
     
     public int get_day() {
@@ -25,6 +30,16 @@ public class Date {
     public int get_Date()
     {
         return day + month*100 + year*10000;
+    }
+
+    public void set_open_status(boolean status)
+    {
+        this.open = status;
+    }
+
+    public boolean get_open_status()
+    {
+        return open;
     }
 
     @Override

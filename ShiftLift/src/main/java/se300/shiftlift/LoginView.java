@@ -2,11 +2,11 @@ package se300.shiftlift;
 
 import java.util.List;
 
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -15,6 +15,7 @@ import com.vaadin.flow.router.Route;
 
 public class LoginView extends VerticalLayout {
 
+    @SuppressWarnings("unused")
     private final UserRepository userRepository;
 
     public LoginView(UserRepository userRepository) {
@@ -41,6 +42,10 @@ public class LoginView extends VerticalLayout {
             .set("background-color", "#156fabff")
             .set("color", "white");
         loginButton.setWidth("300px");
+        
+        // Add Enter key shortcut - pressing Enter in either field will trigger login
+        inputUser.addKeyPressListener(Key.ENTER, e -> loginButton.click());
+        inputPassword.addKeyPressListener(Key.ENTER, e -> loginButton.click());
             
         var changePassword = new Button("Change Password");
         changePassword.getStyle()

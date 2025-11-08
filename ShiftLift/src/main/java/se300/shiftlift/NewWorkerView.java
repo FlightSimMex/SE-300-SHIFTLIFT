@@ -87,10 +87,10 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
         layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, emailField);
         emailField.setWidth("min-content");
         emailField.getElement().setAttribute("name", "email");
-        emailField.setPlaceholder("username@my.erau.edu");
-        emailField.setErrorMessage("Please enter a valid example@my.erau.edu email address");
+        emailField.setPlaceholder("username@erau.edu");
+        emailField.setErrorMessage("Please enter a valid example@erau.edu email address");
         emailField.setClearButtonVisible(true);
-        emailField.setPattern("^.+@my.erau.edu$");
+        emailField.setPattern("^.+@erau.edu$");
         passwordField.setLabel("New Worker Password:");
         layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, passwordField);
         passwordField.setWidth("min-content");

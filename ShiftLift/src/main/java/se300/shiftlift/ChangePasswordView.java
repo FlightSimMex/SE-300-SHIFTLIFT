@@ -5,8 +5,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -17,6 +15,7 @@ import com.vaadin.flow.router.Route;
 @Route("change-password")
 public class ChangePasswordView extends VerticalLayout implements BeforeEnterObserver {
 
+    @SuppressWarnings("unused")
     private final UserService userService;
 
     public ChangePasswordView(UserService userService) {

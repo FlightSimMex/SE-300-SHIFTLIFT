@@ -19,6 +19,7 @@ public abstract class User {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     @Column(name = "user_id") //Name of a specific column in the database that corresponds with the variable below
+    @SuppressWarnings("unused")
     private Long id; //ID required for mySQL work
     
     @Column(name = "username")

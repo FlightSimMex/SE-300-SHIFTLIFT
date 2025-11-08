@@ -2,8 +2,6 @@ package se300.shiftlift;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -42,9 +40,7 @@ public class MainMenuView extends VerticalLayout implements BeforeEnterObserver 
     changePasswordBtn.getStyle().set("background-color", "#156fabff").set("color", "white");
 
         manageWorkersBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(ListUsersView.class)));
-        manageWorkstationsBtn.addClickListener(e -> {
-            // TODO: Implement workstation management view
-        });
+        manageWorkstationsBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(ListWorkstationsView.class)));
         manageSchedulesBtn.addClickListener(e -> {
             // TODO: Implement schedule management view
         });
@@ -62,6 +58,7 @@ public class MainMenuView extends VerticalLayout implements BeforeEnterObserver 
         // Hide admin-only actions for non-admin users
         boolean admin = Auth.isAdmin();
         manageWorkersBtn.setVisible(admin);
+        manageWorkstationsBtn.setVisible(admin);
 
     add(topBar, title, buttonLayout);
 

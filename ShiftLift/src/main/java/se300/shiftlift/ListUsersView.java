@@ -52,7 +52,7 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
     Button logoutBtn = new Button("Logout");
     logoutBtn.getStyle().set("color", "#666666");
     logoutBtn.addClickListener(e -> Auth.logoutToLogin());
-    // Keep title centered; put Logout in its own right-aligned bar
+    
     HorizontalLayout topBar = new HorizontalLayout(logoutBtn);
     topBar.setWidthFull();
     topBar.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -100,6 +100,8 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
     // Return to the Main Menu view
     returnButton.addClickListener(e -> UI.getCurrent().navigate(MainMenuView.class));
         
+
+    //Use url parameter to pass username to edit view
         editButton.addClickListener(e -> {
             if (selectedItem != null) {
                 String username = selectedItem.getElement().getProperty("_user");
@@ -177,7 +179,7 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
             }
         });
 
-        // Create main content container (exclude topBar so we can place it at the very top like MainMenu)
+        // Create main content container
     VerticalLayout contentLayout = new VerticalLayout(title, searchLayout, listLayout, bottomLayout);
         contentLayout.setSizeFull();
         contentLayout.setSpacing(true);
@@ -194,7 +196,7 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
     public void beforeEnter(BeforeEnterEvent event) {
         if (!Auth.isLoggedIn() || !Auth.isAdmin()) {
             Notification.show("Access denied: Admins only", 2000, Notification.Position.MIDDLE);
-            event.rerouteTo("");
+            event.rerouteTo("main-menu");
         }
     }
 

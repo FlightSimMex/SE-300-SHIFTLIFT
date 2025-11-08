@@ -31,7 +31,7 @@ import jakarta.annotation.security.RolesAllowed;
 @RolesAllowed("ADMIN")
 public class EditUserView extends Composite<VerticalLayout> implements BeforeEnterObserver, com.vaadin.flow.router.BeforeLeaveObserver {
 
-
+    
     private HorizontalLayout layoutRow3 = new HorizontalLayout();
     private HorizontalLayout layoutRow5 = new HorizontalLayout();
     private VerticalLayout layoutColumn5 = new VerticalLayout();
