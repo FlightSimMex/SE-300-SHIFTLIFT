@@ -31,23 +31,27 @@ public class MainMenuView extends VerticalLayout implements BeforeEnterObserver 
 
     Button manageWorkersBtn = new Button("Manage Workers");
     Button manageWorkstationsBtn = new Button("Manage Workstations");
-    Button manageSchedulesBtn = new Button("Manage Schedules");
+    Button manageSchedulesBtn = new Button("View Schedules");
+    Button newShiftBtn = new Button("Create New Shift");
     Button changePasswordBtn = new Button("Change Password");
 
     manageWorkersBtn.getStyle().set("background-color", "#156fabff").set("color", "white");
     manageWorkstationsBtn.getStyle().set("background-color", "#156fabff").set("color", "white");
     manageSchedulesBtn.getStyle().set("background-color", "#156fabff").set("color", "white");
+    newShiftBtn.getStyle().set("background-color", "#156fabff").set("color", "white");
     changePasswordBtn.getStyle().set("background-color", "#156fabff").set("color", "white");
 
         manageWorkersBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(ListUsersView.class)));
         manageWorkstationsBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(ListWorkstationsView.class)));
-        manageSchedulesBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(NewShiftView.class)));
+        manageSchedulesBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(ManageScheduleView.class)));
+        newShiftBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(NewShiftView.class)));
         changePasswordBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(ChangePasswordView.class)));
 
         HorizontalLayout buttonLayout = new HorizontalLayout(
             manageWorkersBtn,
             manageWorkstationsBtn,
             manageSchedulesBtn,
+            newShiftBtn,
             changePasswordBtn
         );
         buttonLayout.setJustifyContentMode(JustifyContentMode.CENTER);

@@ -1,8 +1,9 @@
 package se300.shiftlift;
 
-import org.springframework.stereotype.Service;
+import java.util.List;
 
-import jakarta.transaction.Transactional;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ShiftService 
@@ -24,6 +25,12 @@ public class ShiftService
             System.out.println("Error adding shift: " + e.getMessage());
         }
  
+    }
+
+    //Returns a list of all shifts in the database
+    @Transactional(readOnly = true)
+    public List<Shift> getAllShifts() {
+        return shiftRepositry.findAll();
     }
     
 }
