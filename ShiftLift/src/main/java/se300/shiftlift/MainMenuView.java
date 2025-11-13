@@ -41,9 +41,7 @@ public class MainMenuView extends VerticalLayout implements BeforeEnterObserver 
 
         manageWorkersBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(ListUsersView.class)));
         manageWorkstationsBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(ListWorkstationsView.class)));
-        manageSchedulesBtn.addClickListener(e -> {
-            // TODO: Implement schedule management view
-        });
+        manageSchedulesBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(NewShiftView.class)));
         changePasswordBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(ChangePasswordView.class)));
 
         HorizontalLayout buttonLayout = new HorizontalLayout(

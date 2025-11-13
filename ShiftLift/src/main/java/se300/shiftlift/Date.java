@@ -1,5 +1,8 @@
 package se300.shiftlift;
 
+import jakarta.persistence.Embeddable;
+
+@Embeddable
 public class Date {
     @SuppressWarnings("FieldMayBeFinal")
     private int day;
@@ -8,6 +11,10 @@ public class Date {
     @SuppressWarnings("FieldMayBeFinal")
     private int year;
     private boolean open;
+
+    // Default constructor required by JPA
+    public Date() {
+    }
 
     //Missing input validation
     public Date(int day, int month, int year) {

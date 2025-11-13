@@ -182,9 +182,9 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
         emailTextField.setLabel("Email:");
         layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, emailTextField);
         emailTextField.setWidth("min-content");
-        emailTextField.setErrorMessage("Please enter a valid example@my.erau.edu email address");
+        emailTextField.setErrorMessage("Please enter a valid email address (@my.erau.edu or @erau.edu)");
         emailTextField.setClearButtonVisible(true);
-        emailTextField.setPattern("^.+@my.erau.edu$");
+        emailTextField.setPattern("^.+@(my\\.)?erau\\.edu$");
         usernameTextField.setLabel("Username:");
         layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, usernameTextField);
         usernameTextField.setWidth("min-content");

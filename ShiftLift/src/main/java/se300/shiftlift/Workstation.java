@@ -1,6 +1,7 @@
 package se300.shiftlift;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -24,6 +25,7 @@ public class Workstation {
     @Column(name = "workstation_name")
     private String workstation;
 
+    @Embedded
     private Time operation_hours;
 
 

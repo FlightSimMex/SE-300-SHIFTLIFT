@@ -1,21 +1,58 @@
 package se300.shiftlift;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "shifts")
 public class Shift {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "shift_id")
+    private Long id;
+
+    @Embedded
     private Date assigned_date;
-    private StudentWorker assigned_Worker;
+    
+    @ManyToOne
+    @JoinColumn(name = "worker_id")
+    private User assigned_Worker;
+    
+    @Embedded
     private Time assigned_time;
+    
+    @ManyToOne
+    @JoinColumn(name = "workstation_id")
     private Workstation assigned_workstation;
 
+    // Default constructor required by JPA
+    public Shift() {
+    }
 
-    public Shift(Date date, Time time, Workstation workstation, StudentWorker worker)
+    public Shift(Date date, Time time, Workstation workstation, User worker)
     {
+        this.id = null; // Ensure ID is null for new entities
         this.assigned_date = date;
         this.assigned_time = time;
         this.assigned_workstation = workstation;
         this.assigned_Worker = worker;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public Date getDate() {
         return assigned_date;
@@ -25,7 +62,7 @@ public class Shift {
         return assigned_time;
     }
 
-    public StudentWorker getStudentWorker() {
+    public User getStudentWorker() {
         return assigned_Worker;
     }
 
@@ -47,6 +84,16 @@ public class Shift {
 
     public void changeStudentWorker(StudentWorker newWorker) {
         this.assigned_Worker = newWorker;
+    }
+
+    @Override
+    public String toString() {
+        return "Shift{" +
+                "assigned_date=" + assigned_date +
+                ", assigned_Worker=" + assigned_Worker +
+                ", assigned_time=" + assigned_time +
+                ", assigned_workstation=" + assigned_workstation +
+                '}';
     }
 
 }

@@ -115,7 +115,7 @@ public class UserService {
         userRepository.delete(user);
         userRepository.flush();
         
-        // After deleting a user, recompute seniority numbers for remaining student workers.
+        // After deleting a user, regenerate seniority numbers for remaining student workers.
         // Seniority numbers are compressed to consecutive integers starting at 1 where
         // 1 is the most senior (lowest number) and larger numbers are lower seniority.
         List<User> all = userRepository.findAll();
