@@ -275,6 +275,10 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
         }
         return validateTimes();
     }
+
+    //TODO: Helper method that returns a Shift object if the current wokstation is occupied.
+    //TODO: Helper method to determin if student worker is double booked for a particular date and time.
+    //TODO: Implement seniority override functionality with workstation booking conflicts and availiboility. (If the seniority number is lower && there is at least one more workstation available during the shift times)
     
     private List<String> generateTimeOptions() {
         List<String> timeOptions = new ArrayList<>();
