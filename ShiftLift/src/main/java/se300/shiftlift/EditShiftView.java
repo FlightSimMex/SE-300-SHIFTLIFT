@@ -27,17 +27,18 @@ import com.vaadin.flow.router.Route;
 
 import jakarta.annotation.security.RolesAllowed;
 
-@PageTitle("New Shift")
-@Route("new-shift")
+@PageTitle("Edit Shift")
+@Route("edit-shift")
 @RolesAllowed("ALL")
-public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnterObserver, BeforeLeaveObserver {
+public class EditShiftView extends Composite<VerticalLayout> implements BeforeEnterObserver, BeforeLeaveObserver {
 
     //Add Attribute Components
     private VerticalLayout mainContainer = new VerticalLayout();
-    private H1 title = new H1("Create New Shift");
+    private H1 title = new H1("Edit Shift");
     private Button logoutButton = new Button("Logout");
     private Button addShiftButton = new Button("Add Shift");
     private Button cancelButton = new Button("Cancel");
+    private Button deleteButton = new Button("Delete");
     private DatePicker shiftDatePicker = new DatePicker("Shift Date");
     private ComboBox<User> workerComboBox = new ComboBox<>("Select Worker");
     private ComboBox<Workstation> workstationComboBox = new ComboBox<>("Select Workstation");
@@ -56,7 +57,7 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
 
 
 
-    public NewShiftView(UserService userService, WorkstationService workstationService, ShiftService shiftService) {
+    public EditShiftView(UserService userService, WorkstationService workstationService, ShiftService shiftService) {
         this.userService = userService;
         this.workstationService = workstationService;
         this.shiftService = shiftService;
@@ -185,8 +186,17 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
             .set("font-family", "Poppins, sans-serif")
             .set("color", "#666666");
         cancelButton.addClickListener(e -> cancel_button_click_listener());
+
+       
+        deleteButton.getStyle()
+            .set("font-family", "Poppins, sans-serif")
+            .set("color", "white")
+            .set("background-color", "#9b0000ff");
+        deleteButton.addClickListener(e -> delete_button_click_listener());
+
         
         buttonLayout.add(addShiftButton, cancelButton);
+        mainContainer.add(deleteButton);
         mainContainer.add(buttonLayout);
         getContent().add(mainContainer);
         getContent().setHorizontalComponentAlignment(Alignment.CENTER, mainContainer); // Center the main container
@@ -194,7 +204,10 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
         
     }
 
-  
+    private void delete_button_click_listener(){};
+
+
+
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (!Auth.isLoggedIn()) {
@@ -275,10 +288,6 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
         }
         return validateTimes();
     }
-
-    //TODO: Helper method that returns a Shift object if the current wokstation is occupied.
-    //TODO: Helper method to determin if student worker is double booked for a particular date and time.
-    //TODO: Implement seniority override functionality with workstation booking conflicts and availiboility. (If the seniority number is lower && there is at least one more workstation available during the shift times)
     
     private List<String> generateTimeOptions() {
         List<String> timeOptions = new ArrayList<>();
