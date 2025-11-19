@@ -26,7 +26,6 @@ public class WorkstationService {
             throw new IllegalArgumentException("Workstation already exists");
         }else{
             workstationRepository.saveAndFlush(workstation);
-            //TODO: Check if has operation hours, if not set default??
         }
 
     }
@@ -77,7 +76,11 @@ public class WorkstationService {
         return workstationRepository.count();
     }
 
-    
+    //Find workstation by ID
+    @Transactional(readOnly = true)
+    public java.util.Optional<Workstation> findById(Long id) {
+        return workstationRepository.findById(id);
+    }
 
    
 }

@@ -76,6 +76,10 @@ public abstract class User {
         return username;
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public String getInitials() {
         return initials;
     }

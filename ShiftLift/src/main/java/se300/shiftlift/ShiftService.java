@@ -9,10 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ShiftService 
 {
     private ShiftRepositry shiftRepositry;
+    private final WorkstationRepository workstationRepository;
 
-    ShiftService(ShiftRepositry shiftRepositry) {
+    ShiftService(ShiftRepositry shiftRepositry, WorkstationRepository workstationRepository) {
         this.shiftRepositry = shiftRepositry;
-        
+        this.workstationRepository = workstationRepository;
     }
 
     @Transactional
@@ -32,5 +33,160 @@ public class ShiftService
     public List<Shift> getAllShifts() {
         return shiftRepositry.findAll();
     }
+
+    @Transactional
+    public void updateShift(Shift shift, Date date, User worker, Workstation workstation, Time time) {
+        try {
+            shift.changeDate(date);
+            shift.changeStudentWorker((StudentWorker) worker);
+            shift.changeWorkstation(workstation);
+            shift.changeTime(time);
+            shiftRepositry.saveAndFlush(shift);
+        } catch (Exception e) {
+            System.out.println("Error updating shift: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void deleteShift(Shift shift) {
+        try {
+            if (shift != null) {
+                shiftRepositry.delete(shift);
+                shiftRepositry.flush();
+            }
+        } catch (Exception e) {
+            System.out.println("Error deleting shift: " + e.getMessage());
+        }
+    }
+
+    public boolean workstationOcupied(Workstation workstation, Date date, Time time) {
+        List<Shift> allShifts = getAllShifts();
+        for (Shift shift : allShifts) {
+            // Compare workstation by ID (for entities) and date by value
+            boolean sameWorkstation = shift.getWorkstation().getId() != null && 
+                                     workstation.getId() != null &&
+                                     shift.getWorkstation().getId().equals(workstation.getId());
+            
+            boolean sameDate = shift.getDate().get_Date() == date.get_Date();
+            
+            if (sameWorkstation && sameDate && timesOverlap(shift.getTime(), time)) {
+                return true; // Workstation is occupied (times overlap)
+            }
+        }
+        return false; // Workstation is available
+    }
+
+    public boolean workstationOcupied(Workstation workstation, Date date, Time time, Long excludeShiftId) {
+        List<Shift> allShifts = getAllShifts();
+        for (Shift shift : allShifts) {
+            // Skip the shift being edited
+            if (excludeShiftId != null && shift.getId() != null && shift.getId().equals(excludeShiftId)) {
+                continue;
+            }
+            
+            // Compare workstation by ID (for entities) and date by value
+            boolean sameWorkstation = shift.getWorkstation().getId() != null && 
+                                     workstation.getId() != null &&
+                                     shift.getWorkstation().getId().equals(workstation.getId());
+            
+            boolean sameDate = shift.getDate().get_Date() == date.get_Date();
+            
+            if (sameWorkstation && sameDate && timesOverlap(shift.getTime(), time)) {
+                return true; // Workstation is occupied (times overlap)
+            }
+        }
+        return false; // Workstation is available
+    }
+
+    public boolean workerDoubleBooked(User worker, Date date, Time time) {
+        List<Shift> allShifts = getAllShifts();
+        for (Shift shift : allShifts) {
+            // Compare worker by ID (for entities) and date by value
+            boolean sameWorker = shift.getStudentWorker().getId() != null && 
+                                worker.getId() != null &&
+                                shift.getStudentWorker().getId().equals(worker.getId());
+            
+            boolean sameDate = shift.getDate().get_Date() == date.get_Date();
+            
+            if (sameWorker && sameDate && timesOverlap(shift.getTime(), time)) {
+                return true; // Worker is double booked (times overlap)
+            }
+        }
+        return false; // Worker is available
+    }
+
+    public boolean workerDoubleBooked(User worker, Date date, Time time, Long excludeShiftId) {
+        List<Shift> allShifts = getAllShifts();
+        for (Shift shift : allShifts) {
+            // Skip the shift being edited
+            if (excludeShiftId != null && shift.getId() != null && shift.getId().equals(excludeShiftId)) {
+                continue;
+            }
+            
+            // Compare worker by ID (for entities) and date by value
+            boolean sameWorker = shift.getStudentWorker().getId() != null && 
+                                worker.getId() != null &&
+                                shift.getStudentWorker().getId().equals(worker.getId());
+            
+            boolean sameDate = shift.getDate().get_Date() == date.get_Date();
+            
+            if (sameWorker && sameDate && timesOverlap(shift.getTime(), time)) {
+                return true; // Worker is double booked (times overlap)
+            }
+        }
+        return false; // Worker is available
+    }
     
+
+    private boolean timesOverlap(Time t1, Time t2) {
+        return t1.getStart_time() < t2.getEnd_time() && t2.getStart_time() < t1.getEnd_time();
+    }
+
+    public Long workstationAvailable(Date date, Time time) {
+        List<Workstation> workstations = workstationRepository.findAll();
+        for (Workstation workstation : workstations) {
+            Long id = workstation.getId();
+            if (id != null && !workstationOcupied(workstation, date, time)) {
+                return id;
+            }
+        }
+        // No available workstation found
+        return null;
+    }
+
+    public Shift getConflictingShift(Workstation workstation, Date date, Time time) {
+        List<Shift> allShifts = getAllShifts();
+        for (Shift shift : allShifts) {
+            boolean sameWorkstation = shift.getWorkstation().getId() != null && 
+                                     workstation.getId() != null &&
+                                     shift.getWorkstation().getId().equals(workstation.getId());
+            
+            boolean sameDate = shift.getDate().get_Date() == date.get_Date();
+            
+            if (sameWorkstation && sameDate && timesOverlap(shift.getTime(), time)) {
+                return shift;
+            }
+        }
+        return null;
+    }
+
+    public boolean isSenior(User user1, User user2) {
+        // Both are StudentWorkers: compare seniority numbers (lower = more senior)
+        if (user1 instanceof StudentWorker sw1 && user2 instanceof StudentWorker sw2) {
+            return sw1.getSeniority() < sw2.getSeniority();
+        }
+        
+        // user1 is Manager, user2 is StudentWorker: Manager is senior
+        if (user1 instanceof ManagerUser && user2 instanceof StudentWorker) {
+            return true;
+        }
+        
+        // user1 is StudentWorker, user2 is Manager: StudentWorker is not senior to Manager
+        if (user1 instanceof StudentWorker && user2 instanceof ManagerUser) {
+            return false;
+        }
+        
+        // Both are Managers: neither is more senior (equal rank)
+        return false;
+    }
 }

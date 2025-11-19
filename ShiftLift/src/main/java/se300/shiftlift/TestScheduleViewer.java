@@ -26,10 +26,10 @@ import com.vaadin.flow.router.Route;
 
 import jakarta.annotation.security.RolesAllowed;
 
-@PageTitle("Manage Schedule")
-@Route("manage-schedule")
+@PageTitle("Schedule Tester")
+@Route("test-schedule")
 @RolesAllowed("ALL")
-public class ManageScheduleView extends Composite<VerticalLayout> implements BeforeEnterObserver {
+public class TestScheduleViewer extends Composite<VerticalLayout> implements BeforeEnterObserver {
     
     private final ShiftService shiftService;
     private final ScheduleService scheduleService;
@@ -43,7 +43,7 @@ public class ManageScheduleView extends Composite<VerticalLayout> implements Bef
     private Shift selectedShift = null;
     private Schedule currentSchedule = null;
 
-    public ManageScheduleView(ShiftService shiftService, ScheduleService scheduleService) {
+    public TestScheduleViewer(ShiftService shiftService, ScheduleService scheduleService) {
         this.shiftService = shiftService;
         this.scheduleService = scheduleService;
         createElements();
