@@ -44,7 +44,7 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             // Routes that will be in the hamburger for navigation
             RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
-            RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageScheduleView.class);
+            RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
             
             // Apply styling to each link

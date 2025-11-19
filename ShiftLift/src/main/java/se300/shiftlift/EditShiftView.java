@@ -11,6 +11,7 @@ import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.notification.Notification;
@@ -315,17 +316,103 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                     parseTimeFromString(endTimeComboBox.getValue())
                 );
                 
-                // Check if workstation is occupied
+                // Check if worker is double booked
                 Long excludeShiftId = (currentShift != null) ? currentShift.getId() : null;
-                if (shiftService.workstationOcupied(workstationComboBox.getValue(), shiftDate, shiftTime, excludeShiftId)) {
-                    Notification.show("Selected workstation is already occupied for the chosen date and time.", 
+                if (shiftService.workerDoubleBooked(workerComboBox.getValue(), shiftDate, shiftTime, excludeShiftId)) {
+                    Notification.show("Selected worker is already scheduled for another shift at this date and time.", 
                         4000, Notification.Position.MIDDLE);
                     return;
                 }
-
-                // Check if worker is double booked
-                if (shiftService.workerDoubleBooked(workerComboBox.getValue(), shiftDate, shiftTime, excludeShiftId)) {
-                    Notification.show("Selected worker is already scheduled for another shift at this date and time.", 
+                
+                // Check if workstation is occupied and handle senior override
+                if (shiftService.workstationOcupied(workstationComboBox.getValue(), shiftDate, shiftTime, excludeShiftId) && shiftService.workstationAvailable(shiftDate, shiftTime) != null) {
+                    // Get the conflicting shift
+                    Shift conflictingShift = shiftService.getConflictingShift(workstationComboBox.getValue(), shiftDate, shiftTime);
+                    
+                    // Make sure it's not the same shift being edited
+                    if (conflictingShift != null && (excludeShiftId == null || !conflictingShift.getId().equals(excludeShiftId))) {
+                        User currentWorker = workerComboBox.getValue();
+                        User conflictingWorker = conflictingShift.getStudentWorker();
+                        
+                        // Check if current worker is more senior
+                        if (shiftService.isSenior(currentWorker, conflictingWorker)) {
+                            // Find an available workstation for the conflicting shift
+                            Long availableWorkstationId = shiftService.workstationAvailable(shiftDate, shiftTime);
+                            
+                            if (availableWorkstationId != null) {
+                                // Show confirmation dialog for override
+                                ConfirmDialog dialog = new ConfirmDialog();
+                                dialog.setHeader("Senior Override");
+                                dialog.setText(String.format(
+                                    "You have higher seniority than %s. Would you like to take this workstation? " +
+                                    "The other worker will be reassigned to an available workstation.",
+                                    conflictingWorker.getUsername()
+                                ));
+                                
+                                dialog.setCancelable(true);
+                                dialog.setConfirmText("Override");
+                                dialog.setCancelText("Cancel");
+                                
+                                dialog.addConfirmListener(event -> {
+                                    try {
+                                        // Find the available workstation
+                                        Workstation newWorkstation = workstationService.findById(availableWorkstationId).orElse(null);
+                                        
+                                        if (newWorkstation != null) {
+                                            // Update conflicting shift to new workstation
+                                            shiftService.updateShift(
+                                                conflictingShift,
+                                                conflictingShift.getDate(),
+                                                conflictingShift.getStudentWorker(),
+                                                newWorkstation,
+                                                conflictingShift.getTime()
+                                            );
+                                            
+                                            // Update current shift
+                                            if (currentShift != null) {
+                                                shiftService.updateShift(
+                                                    currentShift,
+                                                    shiftDate,
+                                                    currentWorker,
+                                                    workstationComboBox.getValue(),
+                                                    shiftTime
+                                                );
+                                            } else {
+                                                shiftService.addShift(
+                                                    shiftDate,
+                                                    currentWorker,
+                                                    workstationComboBox.getValue(),
+                                                    shiftTime
+                                                );
+                                            }
+                                            
+                                            dirty = false;
+                                            Notification.show("Shift updated successfully! Previous worker reassigned.", 
+                                                3000, Notification.Position.BOTTOM_START);
+                                            UI.getCurrent().navigate("manage-schedule");
+                                        }
+                                    } catch (Exception ex) {
+                                        Notification.show("Error during override: " + ex.getMessage(), 
+                                            4000, Notification.Position.MIDDLE);
+                                    }
+                                });
+                                
+                                dialog.open();
+                                return; // Exit early, dialog handles the rest
+                            } else {
+                                Notification.show("Cannot override: No other workstation available for reassignment.", 
+                                    4000, Notification.Position.MIDDLE);
+                                return;
+                            }
+                        } else {
+                            Notification.show("Workstation is occupied and you do not have seniority override privileges.", 
+                                4000, Notification.Position.MIDDLE);
+                            return;
+                        }
+                    }
+                } else if (shiftService.workstationOcupied(workstationComboBox.getValue(), shiftDate, shiftTime, excludeShiftId)) {
+                    // Workstation is occupied but no alternative available
+                    Notification.show("Selected workstation is already occupied for the chosen date and time.", 
                         4000, Notification.Position.MIDDLE);
                     return;
                 }
