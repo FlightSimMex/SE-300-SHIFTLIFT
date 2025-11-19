@@ -49,6 +49,7 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
 
     //Attribute Objects
     private User currentUser;
+    private Shift currentShift = null;
     private final UserService userService;
     private final WorkstationService workstationService;
     private final ShiftService shiftService;
@@ -141,7 +142,7 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
         workstationComboBox.setLabel("Workstation: ");
         
         // Add listener to update time options when workstation changes
-        workstationComboBox.addValueChangeListener(e -> updateTimeOptions());
+        workstationComboBox.addValueChangeListener(e -> updateTimeOptionsIfNeeded(e.getOldValue(), e.getValue()));
 
         //Setup Start time ComboBox
         startTimeComboBox.setWidthFull();
@@ -152,6 +153,10 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
         startTimeComboBox.getStyle()
             .set("font-family", "Poppins, sans-serif");
         startTimeComboBox.addValueChangeListener(e -> validateTimes());
+        startTimeComboBox.addCustomValueSetListener(e -> {
+            String customValue = e.getDetail();
+            startTimeComboBox.setValue(customValue);
+        });
 
         //Setup End time ComboBox
         endTimeComboBox.setWidthFull();
@@ -162,6 +167,10 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
         endTimeComboBox.getStyle()
             .set("font-family", "Poppins, sans-serif");
         endTimeComboBox.addValueChangeListener(e -> validateTimes());
+        endTimeComboBox.addCustomValueSetListener(e -> {
+            String customValue = e.getDetail();
+            endTimeComboBox.setValue(customValue);
+        });
 
         //Add components to main container
         mainContainer.add(shiftDatePicker, workerComboBox, workstationComboBox, startTimeComboBox, endTimeComboBox);
@@ -204,9 +213,64 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
         
     }
 
-    private void delete_button_click_listener(){};
+    private void delete_button_click_listener() {
+        if (currentShift == null) {
+            Notification.show("No shift to delete", 3000, Notification.Position.MIDDLE);
+            return;
+        }
+        
+        try {
+            shiftService.deleteShift(currentShift);
+            dirty = false;
+            Notification.show("Shift deleted successfully!", 3000, Notification.Position.BOTTOM_START);
+            UI.getCurrent().navigate("manage-schedule");
+        } catch (Exception e) {
+            Notification.show("Error deleting shift: " + e.getMessage(), 4000, Notification.Position.MIDDLE);
+        }
+    }
 
+    private void loadShiftById(Long shiftId) {
+        try {
+            List<Shift> allShifts = shiftService.getAllShifts();
+            currentShift = allShifts.stream()
+                .filter(s -> s.getId().equals(shiftId))
+                .findFirst()
+                .orElse(null);
+            
+            if (currentShift != null) {
+                populateFormWithShift(currentShift);
+            } else {
+                Notification.show("Shift not found", 3000, Notification.Position.MIDDLE);
+            }
+        } catch (Exception e) {
+            Notification.show("Error loading shift: " + e.getMessage(), 3000, Notification.Position.MIDDLE);
+        }
+    }
 
+    private void populateFormWithShift(Shift shift) {
+        // Set date
+        Date shiftDate = shift.getDate();
+        shiftDatePicker.setValue(LocalDate.of(
+            shiftDate.get_year(),
+            shiftDate.get_month(),
+            shiftDate.get_day()
+        ));
+        
+        // Set worker
+        workerComboBox.setValue(shift.getStudentWorker());
+        
+        // Set workstation
+        workstationComboBox.setValue(shift.getWorkstation());
+        
+        // Set times
+        Time shiftTime = shift.getTime();
+        startTimeComboBox.setValue(formatTimeForDisplay(shiftTime.getStart_time()));
+        endTimeComboBox.setValue(formatTimeForDisplay(shiftTime.getEnd_time()));
+        
+        // Update button text
+        addShiftButton.setText("Save Changes");
+        title.setText("Edit Shift");
+    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -215,7 +279,20 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
             event.rerouteTo("");
             return;
         }
-    
+        
+        // Load shift from URL parameter
+        java.util.List<String> params = event.getLocation().getQueryParameters().getParameters().get("shiftId");
+        if (params != null && !params.isEmpty()) {
+            String shiftIdStr = params.get(0);
+            if (shiftIdStr != null && !shiftIdStr.isEmpty()) {
+                try {
+                    Long shiftId = Long.parseLong(shiftIdStr);
+                    loadShiftById(shiftId);
+                } catch (NumberFormatException e) {
+                    Notification.show("Invalid shift ID", 3000, Notification.Position.MIDDLE);
+                }
+            }
+        }
     }
 
     @Override
@@ -238,20 +315,48 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                     parseTimeFromString(endTimeComboBox.getValue())
                 );
                 
-                // Use ShiftService to save the shift to database
-                shiftService.addShift(
-                    shiftDate,
-                    workerComboBox.getValue(),
-                    workstationComboBox.getValue(),
-                    shiftTime
-                );
+                // Check if workstation is occupied
+                Long excludeShiftId = (currentShift != null) ? currentShift.getId() : null;
+                if (shiftService.workstationOcupied(workstationComboBox.getValue(), shiftDate, shiftTime, excludeShiftId)) {
+                    Notification.show("Selected workstation is already occupied for the chosen date and time.", 
+                        4000, Notification.Position.MIDDLE);
+                    return;
+                }
+
+                // Check if worker is double booked
+                if (shiftService.workerDoubleBooked(workerComboBox.getValue(), shiftDate, shiftTime, excludeShiftId)) {
+                    Notification.show("Selected worker is already scheduled for another shift at this date and time.", 
+                        4000, Notification.Position.MIDDLE);
+                    return;
+                }
                 
-                dirty = false;
-                Notification.show("Shift created successfully!", 3000, Notification.Position.BOTTOM_START);
-                UI.getCurrent().navigate("main-menu");
+                if (currentShift != null) {
+                    // Update existing shift
+                    shiftService.updateShift(
+                        currentShift,
+                        shiftDate,
+                        workerComboBox.getValue(),
+                        workstationComboBox.getValue(),
+                        shiftTime
+                    );
+                    dirty = false;
+                    Notification.show("Shift updated successfully!", 3000, Notification.Position.BOTTOM_START);
+                } else {
+                    // Create new shift
+                    shiftService.addShift(
+                        shiftDate,
+                        workerComboBox.getValue(),
+                        workstationComboBox.getValue(),
+                        shiftTime
+                    );
+                    dirty = false;
+                    Notification.show("Shift created successfully!", 3000, Notification.Position.BOTTOM_START);
+                }
+                
+                UI.getCurrent().navigate("manage-schedule");
                 
             } catch (Exception e) {
-                Notification.show("Error creating shift: " + e.getMessage(), 
+                Notification.show("Error saving shift: " + e.getMessage(), 
                     4000, Notification.Position.MIDDLE);
             }
         }
@@ -260,7 +365,7 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
     private void cancel_button_click_listener()
     {
         dirty = false;
-        UI.getCurrent().navigate(MainMenuView.class);
+        UI.getCurrent().navigate("manage-schedule");
     }
 
 
@@ -331,11 +436,13 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
         return timeOptions;
     }
     
-    private void updateTimeOptions() {
-        Workstation selectedWorkstation = workstationComboBox.getValue();
-        if (selectedWorkstation != null && selectedWorkstation.getOperation_hours() != null) {
-            // Generate time options based on workstation operating hours
-            Time operatingHours = selectedWorkstation.getOperation_hours();
+    private void updateTimeOptionsIfNeeded(Workstation oldWorkstation, Workstation newWorkstation) {
+        // Capture current values BEFORE updating items
+        String currentStartTime = startTimeComboBox.getValue();
+        String currentEndTime = endTimeComboBox.getValue();
+        
+        if (newWorkstation != null && newWorkstation.getOperation_hours() != null) {
+            Time operatingHours = newWorkstation.getOperation_hours();
             List<String> workstationTimeOptions = generateTimeOptionsForWorkstation(
                 operatingHours.getStart_time(), 
                 operatingHours.getEnd_time()
@@ -345,16 +452,48 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
             startTimeComboBox.setItems(workstationTimeOptions);
             endTimeComboBox.setItems(workstationTimeOptions);
             
-            // Set default times based on workstation operating hours
-            startTimeComboBox.setValue(formatTimeForDisplay(operatingHours.getStart_time()));
-            endTimeComboBox.setValue(formatTimeForDisplay(operatingHours.getEnd_time()));
+            // Only update the values if current times fall outside the new workstation's hours
+            if (currentStartTime != null && currentEndTime != null) {
+                int startTime = parseTimeFromString(currentStartTime);
+                int endTime = parseTimeFromString(currentEndTime);
+                int workstationStart = operatingHours.getStart_time();
+                int workstationEnd = operatingHours.getEnd_time();
+                
+                // Restore or update start time based on workstation hours
+                if (startTime >= workstationStart && startTime <= workstationEnd) {
+                    startTimeComboBox.setValue(currentStartTime); // Restore valid time
+                } else {
+                    startTimeComboBox.setValue(formatTimeForDisplay(workstationStart)); // Use workstation start
+                }
+                
+                // Restore or update end time based on workstation hours
+                if (endTime >= workstationStart && endTime <= workstationEnd) {
+                    endTimeComboBox.setValue(currentEndTime); // Restore valid time
+                } else {
+                    endTimeComboBox.setValue(formatTimeForDisplay(workstationEnd)); // Use workstation end
+                }
+            } else {
+                // If no current times set, use workstation defaults
+                startTimeComboBox.setValue(formatTimeForDisplay(operatingHours.getStart_time()));
+                endTimeComboBox.setValue(formatTimeForDisplay(operatingHours.getEnd_time()));
+            }
         } else {
-            // Use default time options and values
+            // Use default time options
             List<String> defaultTimeOptions = generateTimeOptions();
             startTimeComboBox.setItems(defaultTimeOptions);
             endTimeComboBox.setItems(defaultTimeOptions);
-            startTimeComboBox.setValue(formatTimeForDisplay(Time.OPENING_TIME));
-            endTimeComboBox.setValue(formatTimeForDisplay(Time.CLOSING_TIME));
+            
+            // Restore current values if they exist, otherwise use defaults
+            if (currentStartTime != null) {
+                startTimeComboBox.setValue(currentStartTime);
+            } else {
+                startTimeComboBox.setValue(formatTimeForDisplay(Time.OPENING_TIME));
+            }
+            if (currentEndTime != null) {
+                endTimeComboBox.setValue(currentEndTime);
+            } else {
+                endTimeComboBox.setValue(formatTimeForDisplay(Time.CLOSING_TIME));
+            }
         }
     }
     

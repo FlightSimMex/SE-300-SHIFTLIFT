@@ -21,6 +21,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 
 import jakarta.annotation.security.RolesAllowed;
@@ -31,6 +32,7 @@ import jakarta.annotation.security.RolesAllowed;
 public class ManageScheduleView extends Composite<VerticalLayout> implements BeforeEnterObserver {
     
     private final ShiftService shiftService;
+    private final ScheduleService scheduleService;
     private final VerticalLayout dayButtonsLayout = new VerticalLayout();
     private final VerticalLayout shiftsLayout = new VerticalLayout();
     private final VerticalLayout shiftDetailsLayout = new VerticalLayout();
@@ -38,9 +40,12 @@ public class ManageScheduleView extends Composite<VerticalLayout> implements Bef
     private final Map<String, Day> dayMap = new HashMap<>();
     private Day selectedDay = null;
     private Button selectedShiftButton = null;
+    private Shift selectedShift = null;
+    private Schedule currentSchedule = null;
 
-    public ManageScheduleView(ShiftService shiftService) {
+    public ManageScheduleView(ShiftService shiftService, ScheduleService scheduleService) {
         this.shiftService = shiftService;
+        this.scheduleService = scheduleService;
         createElements();
         loadShiftsFromDatabase();
     }
@@ -133,11 +138,25 @@ public class ManageScheduleView extends Composite<VerticalLayout> implements Bef
 
     private void loadShiftsFromDatabase() {
         try {
-            List<Shift> allShifts = shiftService.getAllShifts();
+            // Get the latest unpublished schedule
+            var scheduleOpt = scheduleService.getLatestUnpublishedSchedule();
+            
+            if (scheduleOpt.isEmpty()) {
+                Notification.show("No unpublished schedule found. Create a new schedule first.", 
+                    3000, Notification.Position.MIDDLE);
+                return;
+            }
+            
+            currentSchedule = scheduleOpt.get();
+            
+            // Load and organize shifts for this schedule
+            currentSchedule.loadShifts(shiftService);
+            
+            List<Shift> scheduleShifts = currentSchedule.getShifts();
             dayMap.clear();
             
             // Group shifts by date
-            for (Shift shift : allShifts) {
+            for (Shift shift : scheduleShifts) {
                 String dateKey = formatDateKey(shift.getDate());
                 
                 Day day = dayMap.get(dateKey);
@@ -148,8 +167,8 @@ public class ManageScheduleView extends Composite<VerticalLayout> implements Bef
                 day.addShift(shift);
             }
             
-            // Create day buttons for the next 5 days
-            createDayButtons();
+            // Create day buttons based on schedule dates
+            createDayButtonsFromSchedule();
             
         } catch (Exception e) {
             Notification.show("Error loading shifts: " + e.getMessage(), 
@@ -184,6 +203,49 @@ public class ManageScheduleView extends Composite<VerticalLayout> implements Bef
             
             dayButton.addClickListener(e -> selectDay(dateKey, dayButton));
             dayButtonsLayout.add(dayButton);
+        }
+    }
+
+    private void createDayButtonsFromSchedule() {
+        dayButtonsLayout.removeAll();
+        
+        if (currentSchedule == null) {
+            createDayButtons();
+            return;
+        }
+        
+        Date startDate = currentSchedule.getStartDate();
+        Date endDate = currentSchedule.getEndDate();
+        
+        LocalDate start = LocalDate.of(startDate.get_year(), startDate.get_month(), startDate.get_day());
+        LocalDate end = LocalDate.of(endDate.get_year(), endDate.get_month(), endDate.get_day());
+        
+        // Create buttons for each day in the schedule range (max 30 days for UI purposes)
+        LocalDate current = start;
+        int dayCount = 0;
+        while (!current.isAfter(end) && dayCount < 30) {
+            Date shiftDate = new Date(current.getDayOfMonth(), current.getMonthValue(), current.getYear());
+            String dateKey = formatDateKey(shiftDate);
+            
+            Button dayButton = new Button(formatDateForDisplay(shiftDate));
+            dayButton.setWidthFull();
+            
+            // Check if there are shifts for this day
+            Day day = dayMap.get(dateKey);
+            if (day != null && !day.getShifts().isEmpty()) {
+                dayButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+                dayButton.getStyle().set("background-color", "#156fabff");
+            } else {
+                dayButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+                dayButton.getStyle().set("background-color", "#f5f5f5");
+                dayButton.getStyle().set("color", "#666");
+            }
+            
+            dayButton.addClickListener(e -> selectDay(dateKey, dayButton));
+            dayButtonsLayout.add(dayButton);
+            
+            current = current.plusDays(1);
+            dayCount++;
         }
     }
 
@@ -252,6 +314,7 @@ public class ManageScheduleView extends Composite<VerticalLayout> implements Bef
         // Highlight selected shift
         shiftButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
         selectedShiftButton = shiftButton;
+        selectedShift = shift;
         
         displayShiftDetails(shift);
     }
@@ -284,11 +347,20 @@ public class ManageScheduleView extends Composite<VerticalLayout> implements Bef
         H3 shiftTitle = new H3("Shift Info");
         Span shiftId = new Span("ID: " + shift.getId());
         
+        // Edit button
+        Button editButton = new Button("Edit Shift");
+        editButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        editButton.getStyle()
+            .set("background-color", "#156fabff")
+            .set("margin-top", "20px");
+        editButton.addClickListener(e -> navigateToEditShift(shift));
+        
         shiftDetailsLayout.add(
             workerTitle, workerName, workerEmail, workerInitials,
             workstationTitle, workstationName,
             timeTitle, date, time,
-            shiftTitle, shiftId
+            shiftTitle, shiftId,
+            editButton
         );
     }
 
@@ -328,6 +400,18 @@ public class ManageScheduleView extends Composite<VerticalLayout> implements Bef
         int hours = time / 100;
         int minutes = time % 100;
         return String.format("%02d:%02d", hours, minutes);
+    }
+
+    private void navigateToEditShift(Shift shift) {
+        if (shift == null || shift.getId() == null) {
+            Notification.show("Error: Invalid shift", 3000, Notification.Position.MIDDLE);
+            return;
+        }
+        
+        HashMap<String, java.util.List<String>> params = new HashMap<>();
+        params.put("shiftId", java.util.List.of(shift.getId().toString()));
+        QueryParameters qp = new QueryParameters(params);
+        UI.getCurrent().navigate("edit-shift", qp);
     }
 
     @Override

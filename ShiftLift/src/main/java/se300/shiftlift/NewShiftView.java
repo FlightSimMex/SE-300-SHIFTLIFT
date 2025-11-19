@@ -151,6 +151,10 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
         startTimeComboBox.getStyle()
             .set("font-family", "Poppins, sans-serif");
         startTimeComboBox.addValueChangeListener(e -> validateTimes());
+        startTimeComboBox.addCustomValueSetListener(e -> {
+            String customValue = e.getDetail();
+            startTimeComboBox.setValue(customValue);
+        });
 
         //Setup End time ComboBox
         endTimeComboBox.setWidthFull();
@@ -161,6 +165,10 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
         endTimeComboBox.getStyle()
             .set("font-family", "Poppins, sans-serif");
         endTimeComboBox.addValueChangeListener(e -> validateTimes());
+        endTimeComboBox.addCustomValueSetListener(e -> {
+            String customValue = e.getDetail();
+            endTimeComboBox.setValue(customValue);
+        });
 
         //Add components to main container
         mainContainer.add(shiftDatePicker, workerComboBox, workstationComboBox, startTimeComboBox, endTimeComboBox);
@@ -224,6 +232,21 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
                     parseTimeFromString(startTimeComboBox.getValue()),
                     parseTimeFromString(endTimeComboBox.getValue())
                 );
+
+                if(shiftService.workstationOcupied(workstationComboBox.getValue(), shiftDate, shiftTime))
+                {
+                    Notification.show("Selected workstation is already occupied for the chosen date and time.", 
+                        4000, Notification.Position.MIDDLE);
+                    return;
+                }
+
+                if(shiftService.workerDoubleBooked(workerComboBox.getValue(), shiftDate, shiftTime))
+                {
+                    Notification.show("Selected worker is already scheduled for another shift at this date and time.", 
+                        4000, Notification.Position.MIDDLE);
+                    return;
+                }
+
                 
                 // Use ShiftService to save the shift to database
                 shiftService.addShift(
@@ -232,6 +255,8 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
                     workstationComboBox.getValue(),
                     shiftTime
                 );
+                
+                
                 
                 dirty = false;
                 Notification.show("Shift created successfully!", 3000, Notification.Position.BOTTOM_START);

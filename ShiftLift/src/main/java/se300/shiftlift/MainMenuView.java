@@ -34,36 +34,69 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     };
     public MainMenuView() {
         boolean admin = Auth.isAdmin();
+        
+        // Create styled drawer menu
+        VerticalLayout drawerLayout = new VerticalLayout();
+        drawerLayout.setPadding(true);
+        drawerLayout.setSpacing(true);
+        
         if(admin){
             // Routes that will be in the hamburger for navigation
-            addToDrawer(new VerticalLayout(new RouterLink("Manage Workers", ListUsersView.class),
-                                           new RouterLink("Manage Workstations", ListWorkstationsView.class),
-                                           new RouterLink("Manage Schedules", NewShiftView.class),
-                                           new RouterLink("Change Password", ChangePasswordView.class)));
+            RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
+            RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
+            RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageScheduleView.class);
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            
+            // Apply styling to each link
+            styleRouterLink(manageWorkersLink);
+            styleRouterLink(manageWorkstationsLink);
+            styleRouterLink(manageSchedulesLink);
+            styleRouterLink(changePasswordLink);
+            
+            drawerLayout.add(manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, changePasswordLink);
         }
         else{
-           addToDrawer(new VerticalLayout(new RouterLink("Change Password", ChangePasswordView.class)));
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            styleRouterLink(changePasswordLink);
+            drawerLayout.add(changePasswordLink);
         }
+        
+        addToDrawer(drawerLayout);
 
         // Creates a hamburger for navigation to other tabs
         DrawerToggle toggle = new DrawerToggle();
-        H1 title = new H1("Working Schedule");
-        title.getStyle()
-             .set("color", "#156fabff")
-             .set("font-family", "Poppins, sans-serif")
-             .set("margin", "0 0 24px 0");
+        toggle.getStyle()
+            .set("color", "#156fabff")
+            .set("background-color", "#f5f5f5")
+            .set("border-radius", "4px");
 
         // Logout Button
         Button logoutBtn = new Button("Logout");
-        logoutBtn.getStyle().set("color", "#156fabff").set("margin-right", "20px");
+        logoutBtn.getStyle()
+            .set("color", "#666666")
+            .set("font-family", "Poppins, sans-serif")
+            .set("margin-right", "20px");
         logoutBtn.addClickListener(e -> Auth.logoutToLogin());
 
         // Navbar layout (this is the header)
-        var header = new HorizontalLayout(toggle, title, logoutBtn);
+        var header = new HorizontalLayout(toggle, logoutBtn);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        header.setPadding(true);
+        header.setSpacing(true);
+        header.getStyle()
+            .set("background-color", "white")
+            .set("padding", "16px 20px");
         addToNavbar(header);
+
+        // Title (moved below navbar)
+        H1 title = new H1("Pending Schedule");
+        title.getStyle()
+             .set("color", "#156fabff")
+             .set("font-family", "Poppins, sans-serif")
+             .set("margin", "20px 0 30px 0")
+             .set("text-align", "center");
 
         // week navigation
         Button prevWeek = new Button(new Icon(VaadinIcon.ANGLE_LEFT));
@@ -113,10 +146,10 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
 
         Component scheduleGrid = createScheduleGrid();
 
-        // Place both headers into the AppLayout content area so they appear
-        // stacked and have the same width inside the padded content region.
-        VerticalLayout content = new VerticalLayout(weekHeader, calendarHeader, scheduleGrid);
+        // Place title and headers into the AppLayout content area
+        VerticalLayout content = new VerticalLayout(title, weekHeader, calendarHeader, scheduleGrid);
         content.setWidthFull();
+        content.setAlignItems(Alignment.CENTER);
         // top 10px, right 60px, bottom 0px, left 60px
         content.getStyle().set("padding", "10px 60px 0 60px");
         content.getStyle().set("box-sizing", "border-box");
@@ -224,6 +257,16 @@ private String getWorkstationColor(int idx) {
         case 3: return "#9C27B0";   
         default: return "#F44336";  
     }
+}
+
+private void styleRouterLink(RouterLink link) {
+    link.getStyle()
+        .set("color", "#156fabff")
+        .set("font-family", "Poppins, sans-serif")
+        .set("text-decoration", "none")
+        .set("padding", "8px 0")
+        .set("display", "block")
+        .set("font-size", "16px");
 }
 
 
