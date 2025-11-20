@@ -46,19 +46,24 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
             RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
             
             // Apply styling to each link
+            
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
             styleRouterLink(manageSchedulesLink);
+            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, changePasswordLink);
+            drawerLayout.add(manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, changePasswordLink);
         }
         else{
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
+            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
-            drawerLayout.add(changePasswordLink);
+            drawerLayout.add(newShiftLink, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
