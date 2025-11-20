@@ -282,6 +282,24 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
                     return;
                 }
                 
+                // Check if the worker is a StudentWorker and if adding this shift would exceed max hours
+                User selectedWorker = workerComboBox.getValue();
+                if (selectedWorker instanceof StudentWorker) {
+                    StudentWorker studentWorker = (StudentWorker) selectedWorker;
+                    if (shiftService.wouldExceedMaxHours(studentWorker, shiftDate, shiftTime)) {
+                        double currentHours = shiftService.getWeeklyHours(studentWorker, shiftDate);
+                        double shiftHours = shiftTime.getDurationInHours();
+                        double totalHours = currentHours + shiftHours;
+                        
+                        Notification.show(String.format(
+                            "Cannot add shift: %s is already scheduled for %.1f hours this week. " +
+                            "Adding this %.1f hour shift would total %.1f hours, exceeding their max of %d hours.",
+                            studentWorker.getUsername(), currentHours, shiftHours, totalHours, studentWorker.getMax_hours()
+                        ), 5000, Notification.Position.MIDDLE);
+                        return;
+                    }
+                }
+                
                 if(shiftService.workstationOcupied(workstationComboBox.getValue(), shiftDate, shiftTime) && shiftService.workstationAvailable(shiftDate, shiftTime) != null)
                 {
                     // Get the conflicting shift

@@ -6,6 +6,7 @@ import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Paragraph;
@@ -49,6 +50,7 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
     private VerticalLayout layoutColumn5 = new VerticalLayout();
     private PasswordField newWorkerPassword = new PasswordField("Confirm Worker Password:");
     private RadioButtonGroup<String> roleSelector = new RadioButtonGroup<>();
+    private ComboBox<String> maxHoursComboBox = new ComboBox<>();
     @Autowired
     private UserService userService;
 
@@ -142,6 +144,17 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
         roleSelector.setItems("Student", "Manager");
         roleSelector.setValue("Student");
         layoutColumn3.add(roleSelector);
+        
+        maxHoursComboBox.setLabel("Max Hours:");
+        maxHoursComboBox.setItems("International (20)", "Domestic (25)", "University Break (29)");
+        maxHoursComboBox.setValue("International (20)");
+        maxHoursComboBox.setWidth("min-content");
+        layoutColumn3.add(maxHoursComboBox);
+        
+        // Show/hide max hours combo box based on role selection
+        roleSelector.addValueChangeListener(e -> {
+            maxHoursComboBox.setVisible("Student".equals(e.getValue()));
+        });
         layoutColumn3.add(layoutRow2);
         layoutRow2.add(button_create);
         layoutRow2.add(button_cancel);
@@ -182,7 +195,17 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
                         if ("Manager".equals(roleSelector.getValue())) {
                             userService.createManagerUser(emailField.getValue().toLowerCase(), passwordField.getValue());
                         } else {
-                            userService.createStudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue());
+                            // Parse max hours from combo box selection
+                            int maxHours = 20; // default
+                            String maxHoursSelection = maxHoursComboBox.getValue();
+                            if (maxHoursSelection != null) {
+                                if (maxHoursSelection.contains("25")) {
+                                    maxHours = 25;
+                                } else if (maxHoursSelection.contains("29")) {
+                                    maxHours = 29;
+                                }
+                            }
+                            userService.createStudentWorker(emailField.getValue().toLowerCase(), passwordField.getValue(), maxHours);
                         }
                     } catch (Exception e) {
 

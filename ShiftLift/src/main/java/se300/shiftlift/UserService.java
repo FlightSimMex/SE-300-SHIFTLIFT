@@ -19,8 +19,9 @@ public class UserService {
 
     //Creates a new Student Worker object and immediately adds it to a row in the users database
     @Transactional
-    public void createStudentWorker(String email, String password) {
+    public void createStudentWorker(String email, String password, int maxHours) {
         StudentWorker studentWorker = new StudentWorker(email, password);
+        studentWorker.setMax_hours(maxHours);
         // student workers get seniority assigned below; no role column required (use instanceof / discriminator)
        
         if(!findByUsername(studentWorker.getUsername()).isEmpty()) {

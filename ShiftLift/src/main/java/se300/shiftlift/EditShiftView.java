@@ -363,6 +363,24 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                     return;
                 }
                 
+                // Check if the worker is a StudentWorker and if this shift would exceed max hours
+                User selectedWorker = workerComboBox.getValue();
+                if (selectedWorker instanceof StudentWorker) {
+                    StudentWorker studentWorker = (StudentWorker) selectedWorker;
+                    if (shiftService.wouldExceedMaxHours(studentWorker, shiftDate, shiftTime, excludeShiftId)) {
+                        double currentHours = shiftService.getWeeklyHours(studentWorker, shiftDate, excludeShiftId);
+                        double shiftHours = shiftTime.getDurationInHours();
+                        double totalHours = currentHours + shiftHours;
+                        
+                        Notification.show(String.format(
+                            "Cannot save shift: %s is already scheduled for %.1f hours this week. " +
+                            "This %.1f hour shift would total %.1f hours, exceeding their max of %d hours.",
+                            studentWorker.getUsername(), currentHours, shiftHours, totalHours, studentWorker.getMax_hours()
+                        ), 5000, Notification.Position.MIDDLE);
+                        return;
+                    }
+                }
+                
                 // Check if workstation is occupied and handle senior override
                 if (shiftService.workstationOcupied(workstationComboBox.getValue(), shiftDate, shiftTime, excludeShiftId) && shiftService.workstationAvailable(shiftDate, shiftTime) != null) {
                     // Get the conflicting shift

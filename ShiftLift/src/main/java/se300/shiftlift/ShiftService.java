@@ -189,4 +189,113 @@ public class ShiftService
         // Both are Managers: neither is more senior (equal rank)
         return false;
     }
+    
+    /**
+     * Calculate the total hours a StudentWorker is scheduled for the work week containing the given date
+     * Work week is Friday-Thursday inclusive
+     * @param worker the StudentWorker
+     * @param date the date to determine which work week
+     * @return total hours scheduled in that work week
+     */
+    public double getWeeklyHours(StudentWorker worker, Date date) {
+        if (worker == null || date == null) {
+            return 0;
+        }
+        
+        List<Shift> allShifts = getAllShifts();
+        double totalHours = 0;
+        
+        for (Shift shift : allShifts) {
+            // Check if the shift belongs to this worker
+            boolean sameWorker = shift.getStudentWorker() != null &&
+                               worker.getId() != null &&
+                               shift.getStudentWorker().getId().equals(worker.getId());
+            
+            // Check if the shift is in the same work week
+            boolean sameWeek = shift.getDate().isSameWorkWeek(date);
+            
+            if (sameWorker && sameWeek) {
+                totalHours += shift.getTime().getDurationInHours();
+            }
+        }
+        
+        return totalHours;
+    }
+    
+    /**
+     * Calculate the total hours a StudentWorker is scheduled for the work week containing the given date,
+     * excluding a specific shift (useful when editing an existing shift)
+     * @param worker the StudentWorker
+     * @param date the date to determine which work week
+     * @param excludeShiftId the shift ID to exclude from calculation
+     * @return total hours scheduled in that work week (excluding the specified shift)
+     */
+    public double getWeeklyHours(StudentWorker worker, Date date, Long excludeShiftId) {
+        if (worker == null || date == null) {
+            return 0;
+        }
+        
+        List<Shift> allShifts = getAllShifts();
+        double totalHours = 0;
+        
+        for (Shift shift : allShifts) {
+            // Skip the shift being excluded
+            if (excludeShiftId != null && shift.getId() != null && shift.getId().equals(excludeShiftId)) {
+                continue;
+            }
+            
+            // Check if the shift belongs to this worker
+            boolean sameWorker = shift.getStudentWorker() != null &&
+                               worker.getId() != null &&
+                               shift.getStudentWorker().getId().equals(worker.getId());
+            
+            // Check if the shift is in the same work week
+            boolean sameWeek = shift.getDate().isSameWorkWeek(date);
+            
+            if (sameWorker && sameWeek) {
+                totalHours += shift.getTime().getDurationInHours();
+            }
+        }
+        
+        return totalHours;
+    }
+    
+    /**
+     * Check if adding a shift would cause the StudentWorker to exceed their max hours for the week
+     * @param worker the StudentWorker
+     * @param date the date of the proposed shift
+     * @param time the time of the proposed shift
+     * @return true if adding this shift would exceed max hours, false otherwise
+     */
+    public boolean wouldExceedMaxHours(StudentWorker worker, Date date, Time time) {
+        if (worker == null || date == null || time == null) {
+            return false;
+        }
+        
+        double currentWeeklyHours = getWeeklyHours(worker, date);
+        double shiftDuration = time.getDurationInHours();
+        double totalHours = currentWeeklyHours + shiftDuration;
+        
+        return totalHours > worker.getMax_hours();
+    }
+    
+    /**
+     * Check if editing a shift would cause the StudentWorker to exceed their max hours for the week
+     * @param worker the StudentWorker
+     * @param date the date of the shift
+     * @param time the time of the shift
+     * @param excludeShiftId the ID of the shift being edited (to exclude from current hours calculation)
+     * @return true if this shift would exceed max hours, false otherwise
+     */
+    public boolean wouldExceedMaxHours(StudentWorker worker, Date date, Time time, Long excludeShiftId) {
+        if (worker == null || date == null || time == null) {
+            return false;
+        }
+        
+        double currentWeeklyHours = getWeeklyHours(worker, date, excludeShiftId);
+        double shiftDuration = time.getDurationInHours();
+        double totalHours = currentWeeklyHours + shiftDuration;
+        
+        return totalHours > worker.getMax_hours();
+    }
 }
