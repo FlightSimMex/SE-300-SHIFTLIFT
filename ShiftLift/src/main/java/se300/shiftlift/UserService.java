@@ -9,16 +9,19 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final ShiftService shiftService;
     
-    UserService(UserRepository userRepository) {
+    UserService(UserRepository userRepository, ShiftService shiftService) {
         this.userRepository = userRepository;
+        this.shiftService = shiftService;
         
     }
 
     //Creates a new Student Worker object and immediately adds it to a row in the users database
     @Transactional
-    public void createStudentWorker(String email, String password) {
+    public void createStudentWorker(String email, String password, int maxHours) {
         StudentWorker studentWorker = new StudentWorker(email, password);
+        studentWorker.setMax_hours(maxHours);
         // student workers get seniority assigned below; no role column required (use instanceof / discriminator)
        
         if(!findByUsername(studentWorker.getUsername()).isEmpty()) {
@@ -110,8 +113,20 @@ public class UserService {
     }
 
     @Transactional
-    public void delete(User user) {
-        if (user == null) return;
+    public int delete(User user) {
+        if (user == null) return 0;
+        
+        // First, delete all shifts associated with this user
+        List<Shift> userShifts = shiftService.getAllShifts().stream()
+            .filter(shift -> shift.getStudentWorker() != null && shift.getStudentWorker().equals(user))
+            .toList();
+        
+        int deletedShiftsCount = userShifts.size();
+        for (Shift shift : userShifts) {
+            shiftService.deleteShift(shift);
+        }
+        
+        // Then delete the user
         userRepository.delete(user);
         userRepository.flush();
         
@@ -135,6 +150,8 @@ public class UserService {
             userRepository.save(sw);
         }
         userRepository.flush();
+        
+        return deletedShiftsCount;
     }
 
     @Transactional(readOnly = true)

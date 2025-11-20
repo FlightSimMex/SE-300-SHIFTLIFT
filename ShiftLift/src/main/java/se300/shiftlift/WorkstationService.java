@@ -11,9 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class WorkstationService {
     
     private final WorkstationRepository workstationRepository;
+    private final ShiftService shiftService;
     
-    public WorkstationService(WorkstationRepository workstationRepository) {
+    public WorkstationService(WorkstationRepository workstationRepository, ShiftService shiftService) {
         this.workstationRepository = workstationRepository;
+        this.shiftService = shiftService;
     }
     
     
@@ -64,10 +66,24 @@ public class WorkstationService {
 
     //Deletes a workstation from the database
     @Transactional
-    public void delete(Workstation workstation) {
-        if (workstation == null) return;
+    public int delete(Workstation workstation) {
+        if (workstation == null) return 0;
+        
+        // First, delete all shifts associated with this workstation
+        List<Shift> workstationShifts = shiftService.getAllShifts().stream()
+            .filter(shift -> shift.getWorkstation() != null && shift.getWorkstation().equals(workstation))
+            .toList();
+        
+        int deletedShiftsCount = workstationShifts.size();
+        for (Shift shift : workstationShifts) {
+            shiftService.deleteShift(shift);
+        }
+        
+        // Then delete the workstation
         workstationRepository.delete(workstation);
         workstationRepository.flush();
+        
+        return deletedShiftsCount;
     }
 
     //Return number of workstations in database

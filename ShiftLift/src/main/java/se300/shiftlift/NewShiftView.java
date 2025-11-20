@@ -52,15 +52,17 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
     private final UserService userService;
     private final WorkstationService workstationService;
     private final ShiftService shiftService;
+    private final ScheduleService scheduleService;
     private boolean dirty = false;
 
 
 
 
-    public NewShiftView(UserService userService, WorkstationService workstationService, ShiftService shiftService) {
+    public NewShiftView(UserService userService, WorkstationService workstationService, ShiftService shiftService, ScheduleService scheduleService) {
         this.userService = userService;
         this.workstationService = workstationService;
         this.shiftService = shiftService;
+        this.scheduleService = scheduleService;
         currentUser = Auth.getCurrentUser();//Get Current user from Vaadin Session
 
         createElements();
@@ -108,8 +110,7 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
         //Elements setup
         shiftDatePicker.setWidthFull();
         shiftDatePicker.setLabel("Date:");
-        shiftDatePicker.setMin(LocalDate.now());//TODO: change to schedule start date
-        shiftDatePicker.setMax(LocalDate.now().plusDays(30));//TODO: change to schedule end date
+        setDatePickerConstraints();
         shiftDatePicker.getStyle()
             .set("font-family", "Poppins, sans-serif");
 
@@ -203,6 +204,44 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
         
     }
 
+    private void setDatePickerConstraints() {
+        try {
+            var scheduleOpt = scheduleService.getLatestUnpublishedSchedule();
+            
+            if (scheduleOpt.isEmpty()) {
+                // No unpublished schedule found - disable date picker
+                shiftDatePicker.setMin(LocalDate.now().plusYears(100)); // Effectively disable
+                shiftDatePicker.setMax(LocalDate.now().plusYears(100));
+                shiftDatePicker.setHelperText("No unpublished schedule found. Please create a schedule first.");
+                return;
+            }
+            
+            Schedule currentSchedule = scheduleOpt.get();
+            Date startDate = currentSchedule.getStartDate();
+            Date endDate = currentSchedule.getEndDate();
+            
+            if (startDate != null && endDate != null) {
+                LocalDate minDate = LocalDate.of(startDate.get_year(), startDate.get_month(), startDate.get_day());
+                LocalDate maxDate = LocalDate.of(endDate.get_year(), endDate.get_month(), endDate.get_day());
+                
+                shiftDatePicker.setMin(minDate);
+                shiftDatePicker.setMax(maxDate);
+                shiftDatePicker.setHelperText(String.format("Select date between %s and %s", 
+                    minDate.toString(), maxDate.toString()));
+            } else {
+                // Fallback if dates are null
+                shiftDatePicker.setMin(LocalDate.now());
+                shiftDatePicker.setMax(LocalDate.now().plusDays(30));
+                shiftDatePicker.setHelperText("Schedule dates not properly set.");
+            }
+        } catch (Exception e) {
+            // Fallback on error
+            shiftDatePicker.setMin(LocalDate.now());
+            shiftDatePicker.setMax(LocalDate.now().plusDays(30));
+            shiftDatePicker.setHelperText("Error loading schedule dates.");
+        }
+    }
+
   
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -241,6 +280,24 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
                     Notification.show("Selected worker is already scheduled for another shift at this date and time.", 
                         4000, Notification.Position.MIDDLE);    
                     return;
+                }
+                
+                // Check if the worker is a StudentWorker and if adding this shift would exceed max hours
+                User selectedWorker = workerComboBox.getValue();
+                if (selectedWorker instanceof StudentWorker) {
+                    StudentWorker studentWorker = (StudentWorker) selectedWorker;
+                    if (shiftService.wouldExceedMaxHours(studentWorker, shiftDate, shiftTime)) {
+                        double currentHours = shiftService.getWeeklyHours(studentWorker, shiftDate);
+                        double shiftHours = shiftTime.getDurationInHours();
+                        double totalHours = currentHours + shiftHours;
+                        
+                        Notification.show(String.format(
+                            "Cannot add shift: %s is already scheduled for %.1f hours this week. " +
+                            "Adding this %.1f hour shift would total %.1f hours, exceeding their max of %d hours.",
+                            studentWorker.getUsername(), currentHours, shiftHours, totalHours, studentWorker.getMax_hours()
+                        ), 5000, Notification.Position.MIDDLE);
+                        return;
+                    }
                 }
                 
                 if(shiftService.workstationOcupied(workstationComboBox.getValue(), shiftDate, shiftTime) && shiftService.workstationAvailable(shiftDate, shiftTime) != null)

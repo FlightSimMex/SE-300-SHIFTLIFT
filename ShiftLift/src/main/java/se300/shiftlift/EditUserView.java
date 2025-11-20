@@ -6,6 +6,7 @@ import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
@@ -44,6 +45,7 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
     private TextField usernameTextField = new TextField();
     private TextField initialsTextField = new TextField();
     private PasswordField passwordField = new PasswordField();
+    private ComboBox<String> maxHoursComboBox = new ComboBox<>();
     private HorizontalLayout layoutRow7 = new HorizontalLayout();
     private Button button_save = new Button();
     private Button button_cancel = new Button();
@@ -149,6 +151,22 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
         usernameTextField.getStyle().set("color", "#156fabff");
         initialsTextField.setValue(user.getInitials());
         passwordField.setValue(user.getPassword());
+        
+        // Show and set max hours combo box only for StudentWorker
+        if (user instanceof StudentWorker) {
+            StudentWorker sw = (StudentWorker) user;
+            int maxHours = sw.getMax_hours();
+            String selection = "International (20)"; // default
+            if (maxHours == 25) {
+                selection = "Domestic (25)";
+            } else if (maxHours == 29) {
+                selection = "University Break (29)";
+            }
+            maxHoursComboBox.setValue(selection);
+            maxHoursComboBox.setVisible(true);
+        } else {
+            maxHoursComboBox.setVisible(false);
+        }
     }
 
     private void create_elements() {
@@ -194,6 +212,14 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
         passwordField.setLabel("Password:");
         layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, passwordField);
         passwordField.setWidth("min-content");
+        
+        maxHoursComboBox.setLabel("Max Hours:");
+        maxHoursComboBox.setItems("International (20)", "Domestic (25)", "University Break (29)");
+        maxHoursComboBox.setValue("International (20)");
+        maxHoursComboBox.setWidth("min-content");
+        maxHoursComboBox.setVisible(false); // Hidden by default, shown only for StudentWorker
+        layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, maxHoursComboBox);
+        
         layoutRow7.setWidthFull();
         layoutRowButtons.setWidthFull();
         layoutColumn3.setFlexGrow(1.0, layoutRow7);
@@ -258,6 +284,7 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
     
         layoutColumn8.add(initialsTextField);
         layoutColumn8.add(passwordField);
+        layoutColumn8.add(maxHoursComboBox);
         layoutColumn8.add(layoutRowButtons);
         
     layoutRow7.add(button_save);
@@ -303,6 +330,22 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
                     // Email update will automatically update username and initials
                     user.setEmail(emailTextField.getValue().toLowerCase());
                     user.setPassword(passwordField.getValue());
+                    
+                    // If user is StudentWorker, update max hours
+                    if (user instanceof StudentWorker) {
+                        StudentWorker sw = (StudentWorker) user;
+                        String maxHoursSelection = maxHoursComboBox.getValue();
+                        int maxHours = 20; // default
+                        if (maxHoursSelection != null) {
+                            if (maxHoursSelection.contains("25")) {
+                                maxHours = 25;
+                            } else if (maxHoursSelection.contains("29")) {
+                                maxHours = 29;
+                            }
+                        }
+                        sw.setMax_hours(maxHours);
+                    }
+                    
                     userService.save(user);
                     dirty = false;
                     Notification.show("User saved", 2000, Notification.Position.BOTTOM_START);
@@ -348,10 +391,14 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
             .set("color", "#666666");
         
         com.vaadin.flow.component.button.Button yes = new com.vaadin.flow.component.button.Button("Delete", ev -> {
-            userService.delete(user);
+            int deletedShifts = userService.delete(user);
             confirm.close();
             dirty = false;
-            Notification.show("User deleted", 2000, Notification.Position.BOTTOM_START);
+            String deleteMessage = "User deleted";
+            if (deletedShifts > 0) {
+                deleteMessage += " (" + deletedShifts + " associated shift(s) also removed)";
+            }
+            Notification.show(deleteMessage, 4000, Notification.Position.BOTTOM_START);
             UI.getCurrent().navigate("list-users");
         });
         yes.addThemeVariants(ButtonVariant.LUMO_PRIMARY);

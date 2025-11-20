@@ -79,4 +79,20 @@ public class Time {
         return String.format("%d:%02d %s", displayHours, minutes, period);
     }
     
+    /**
+     * Calculate the duration of this shift in hours
+     * @return the duration in hours (as a double)
+     */
+    public double getDurationInHours() {
+        int startHours = start_time / 100;
+        int startMinutes = start_time % 100;
+        int endHours = end_time / 100;
+        int endMinutes = end_time % 100;
+        
+        int totalStartMinutes = startHours * 60 + startMinutes;
+        int totalEndMinutes = endHours * 60 + endMinutes;
+        
+        return (totalEndMinutes - totalStartMinutes) / 60.0;
+    }
+    
 }

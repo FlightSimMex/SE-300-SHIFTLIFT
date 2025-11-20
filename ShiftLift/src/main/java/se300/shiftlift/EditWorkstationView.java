@@ -413,10 +413,14 @@ public class EditWorkstationView extends Composite<VerticalLayout> implements Be
             .set("color", "#666666");
         
         com.vaadin.flow.component.button.Button yes = new com.vaadin.flow.component.button.Button("Delete", ev -> {
-            workstationService.delete(workstation);
+            int deletedShifts = workstationService.delete(workstation);
             confirm.close();
             dirty = false;
-            Notification.show("Workstation deleted", 2000, Notification.Position.BOTTOM_START);
+            String deleteMessage = "Workstation deleted";
+            if (deletedShifts > 0) {
+                deleteMessage += " (" + deletedShifts + " associated shift(s) also removed)";
+            }
+            Notification.show(deleteMessage, 4000, Notification.Position.BOTTOM_START);
             UI.getCurrent().navigate("list-workstations");
         });
         yes.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
