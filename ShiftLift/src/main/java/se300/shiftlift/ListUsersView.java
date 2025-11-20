@@ -134,7 +134,7 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
         listLayout.setPadding(false);
         listLayout.setAlignItems(FlexComponent.Alignment.START);
         listLayout.getStyle()
-            .set("gap", "24px")  // Increased gap between rows
+            .set("gap", "6px")  // Minimal gap between rows
             .set("margin-top", "16px");
             
         // Create pagination layout
@@ -172,7 +172,7 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
 
         background.addClickListener(e -> {
             if (selectedItem != null) {
-                selectedItem.getStyle().set("background", "none");
+                deselectUser(selectedItem);
                 selectedItem = null;
                 editButton.setEnabled(false);
                 editButton.getStyle().set("opacity", "0.5");
@@ -220,7 +220,7 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
             VerticalLayout userInfo = new VerticalLayout();
             userInfo.setSpacing(false);
             userInfo.setPadding(false);
-            userInfo.setHeight("50px"); // Match avatar height
+            userInfo.setSizeFull(); // Take full available space in the row
             userInfo.setAlignItems(Alignment.START);
             userInfo.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.CENTER);
 
@@ -256,49 +256,60 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
                 .set("font-weight", "600")
                 .set("color", labelColor)
                 .set("font-family", "Poppins, sans-serif")
-                .set("font-size", "16px");
+                .set("font-size", "16px")
+                .set("align-self", "center"); // Ensure label is vertically centered
 
             // Place avatar, then expanding userInfo, then label (Manager/seniority) at the far right
             HorizontalLayout row = new HorizontalLayout(avatar, userInfo, labelSpan);
             row.setWidth("560px"); // Slightly narrower than container
-            row.setAlignItems(Alignment.CENTER);
-            row.setHeight("90px"); // Increased height to match avatar circle
+            row.setAlignItems(Alignment.CENTER); // Vertically center all components
+            row.setHeight("80px"); // Match ManageSchedulesView height
             row.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.BETWEEN);
             // Make the middle column expand so the seniority stays aligned to the far right
             row.expand(userInfo);
             row.getStyle()
-                .set("padding", "20px 24px")  // Increased vertical padding
+                .set("padding", "10px 24px")  // Reduced vertical padding to fit within button
                 .set("border-radius", "8px")
-                .set("margin", "4px 0")  // Added extra vertical margin
-                .set("min-height", "90px");
+                .set("margin", "0")  // Remove margin to prevent overflow
+                .set("height", "80px") // Match ManageSchedulesView height
+                .set("max-height", "80px") // Prevent expansion beyond button
+                .set("display", "flex")
+                .set("align-items", "center") // Ensure CSS flex centering
+                .set("box-sizing", "border-box"); // Include padding in height calculation
             avatar.getStyle()
                 .set("margin-right", "16px")
-                .set("flex-shrink", "0"); // Prevent avatar from shrinking
+                .set("flex-shrink", "0") // Prevent avatar from shrinking
+                .set("align-self", "center"); // Ensure avatar is vertically centered
 
             Button item = new Button(row);
             item.getStyle()
                 .set("width", "100%")
+                .set("height", "80px") // Match ManageSchedulesView height
                 .set("text-align", "left")
                 .set("padding", "0")
                 .set("background", "white")
                 .set("cursor", "pointer")
                 .set("border", "none")
-                .set("margin", "0 auto"); // Center the narrower row in container
+                .set("margin", "0 auto") // Center the narrower row in container
+                .set("overflow", "hidden") // Prevent content from sticking out
+                .set("display", "flex")
+                .set("align-items", "center")
+                .set("justify-content", "center");
 
             item.addClickListener(ev -> {
                 if (selectedItem == item) {
                     // Clicking the same item again deselects it
-                    selectedItem.getStyle().set("background", "none");
+                    deselectUser(selectedItem);
                     selectedItem = null;
                     editButton.setEnabled(false);
                     editButton.getStyle().set("opacity", "0.5");
                 } else {
                     // Selecting a new item
                     if (selectedItem != null) {
-                        selectedItem.getStyle().set("background", "none");
+                        deselectUser(selectedItem);
                     }
                     selectedItem = item;
-                    item.getStyle().set("background", "#156fab22");
+                    selectUser(item);
                     editButton.setEnabled(true);
                     editButton.getStyle().set("opacity", "1");
                 }
@@ -314,5 +325,78 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
 
         prevButton.setEnabled(slice.hasPrevious());
         nextButton.setEnabled(slice.hasNext());
+    }
+
+    private void selectUser(Button userButton) {
+        // Apply ShiftLift blue background and yellow border
+        userButton.getStyle()
+            .set("background-color", "#156fabff")
+            .set("border", "3px solid #ffc107");
+        
+        // Change text colors to white
+        HorizontalLayout row = (HorizontalLayout) userButton.getChildren().findFirst().orElse(null);
+        if (row != null) {
+            row.getChildren().forEach(component -> {
+                if (component instanceof Avatar) {
+                    // Change avatar text color to white
+                    component.getStyle().set("color", "white");
+                } else if (component instanceof VerticalLayout) {
+                    // Change username and email text to white
+                    VerticalLayout userInfo = (VerticalLayout) component;
+                    userInfo.getChildren().forEach(textComponent -> {
+                        if (textComponent instanceof Span) {
+                            textComponent.getStyle().set("color", "white");
+                        }
+                    });
+                } else if (component instanceof Span) {
+                    // Change seniority/manager label to white
+                    component.getStyle().set("color", "white");
+                }
+            });
+        }
+    }
+
+    private void deselectUser(Button userButton) {
+        // Reset background and border
+        userButton.getStyle()
+            .set("background-color", "white")
+            .set("border", "none");
+        
+        // Reset text colors to original
+        HorizontalLayout row = (HorizontalLayout) userButton.getChildren().findFirst().orElse(null);
+        if (row != null) {
+            row.getChildren().forEach(component -> {
+                if (component instanceof Avatar) {
+                    // Reset avatar text color
+                    component.getStyle().remove("color");
+                } else if (component instanceof VerticalLayout) {
+                    // Reset username and email text colors
+                    VerticalLayout userInfo = (VerticalLayout) component;
+                    userInfo.getChildren().forEach(textComponent -> {
+                        if (textComponent instanceof Span) {
+                            Span span = (Span) textComponent;
+                            // Restore original colors based on content
+                            String text = span.getText();
+                            if (text.contains("@")) {
+                                // Email - grey color
+                                span.getStyle().set("color", "#666666");
+                            } else {
+                                // Username - dark color
+                                span.getStyle().set("color", "#00070cff");
+                            }
+                        }
+                    });
+                } else if (component instanceof Span) {
+                    // Reset seniority/manager label to original color
+                    Span labelSpan = (Span) component;
+                    String text = labelSpan.getText();
+                    if ("Manager".equals(text)) {
+                        labelSpan.getStyle().set("color", "#156fabff");
+                    } else {
+                        labelSpan.getStyle().set("color", "#000000");
+                    }
+                }
+            });
+        }
     }
 }

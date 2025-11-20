@@ -138,8 +138,8 @@ public class ListWorkstationsView extends VerticalLayout implements BeforeEnterO
         listLayout.setSpacing(true);
         listLayout.setAlignItems(FlexComponent.Alignment.START);
         listLayout.getStyle()
-            .set("gap", "24px")
-            .set("Margin-top", "16px");
+            .set("gap", "6px")  // Minimal gap between rows
+            .set("margin-top", "16px");
 
         //Create page navigation layout
         HorizontalLayout pageLayout = new HorizontalLayout(prevButton, nextButton);
@@ -170,7 +170,7 @@ public class ListWorkstationsView extends VerticalLayout implements BeforeEnterO
             .set ("z-index", "-1");
         backgroundDiv.addClickListener(e -> {
             if(selectedItem != null) {
-               selectedItem.getStyle().set("background", "none");
+               deselectWorkstation(selectedItem);
                selectedItem = null;
                editButton.setEnabled(false);
                editButton.getStyle().set("opacity", "0.5");
@@ -218,7 +218,7 @@ public class ListWorkstationsView extends VerticalLayout implements BeforeEnterO
             VerticalLayout workstationInfo = new VerticalLayout();
             workstationInfo.setSpacing(false);
             workstationInfo.setPadding(false);
-            workstationInfo.setHeight("50px");
+            workstationInfo.setSizeFull(); // Take full available space in the row
             workstationInfo.setAlignItems(FlexComponent.Alignment.START);
             workstationInfo.setJustifyContentMode(JustifyContentMode.CENTER);
 
@@ -238,35 +238,54 @@ public class ListWorkstationsView extends VerticalLayout implements BeforeEnterO
 
             workstationInfo.add(nameSpan, hoursSpan);
 
-            Button item = new Button(workstationInfo);
+            // Create a horizontal row layout for proper styling
+            HorizontalLayout row = new HorizontalLayout(workstationInfo);
+            row.setWidth("560px"); // Slightly narrower than container
+            row.setAlignItems(FlexComponent.Alignment.CENTER); // Vertically center all components
+            row.setHeight("80px"); // Match ManageSchedulesView height
+            row.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
+            row.expand(workstationInfo);
+            row.getStyle()
+                .set("padding", "10px 24px")  // Padding to fit within button
+                .set("border-radius", "8px")
+                .set("margin", "0")  // Remove margin to prevent overflow
+                .set("height", "80px") // Match ManageSchedulesView height
+                .set("max-height", "80px") // Prevent expansion beyond button
+                .set("display", "flex")
+                .set("align-items", "center") // Ensure CSS flex centering
+                .set("box-sizing", "border-box"); // Include padding in height calculation
+
+            Button item = new Button(row);
             item.getStyle()
                 .set("width", "100%")
+                .set("height", "80px") // Match ManageSchedulesView height
                 .set("text-align", "left")
                 .set("padding", "0")
                 .set("background", "white")
                 .set("cursor", "pointer")
                 .set("border", "none")
-                .set("margin", "0 auto"); 
+                .set("margin", "0 auto") // Center the narrower row in container
+                .set("overflow", "hidden") // Prevent content from sticking out
+                .set("display", "flex")
+                .set("align-items", "center")
+                .set("justify-content", "center"); 
             
             item.addClickListener(e -> {
                 if(selectedItem == item){
                     //Deselect if already selected
-                    selectedItem.getStyle().set("background", "none");
+                    deselectWorkstation(selectedItem);
                     selectedItem = null;
                     editButton.setEnabled(false);
                     editButton.getStyle().set("opacity", "0.5");
                 }else{
                     //Select the workstation
                     if(selectedItem != null) {
-                        selectedItem.getStyle().set("background", "none");
+                        deselectWorkstation(selectedItem);
                     }
                     selectedItem = item;
-                    selectedItem.getStyle().set("background", "#156fab22");
+                    selectWorkstation(item);
                     editButton.setEnabled(true);
-                    
-                    editButton.getStyle().set("opacity", "1")
-                        .set("background-color", "#156fabff")
-                        .set("color", "white");
+                    editButton.getStyle().set("opacity", "1");
                 }
                 e.getSource().getElement().executeJs("event.stopPropagation()"); //Force this action handler to run before background click
             });
@@ -278,5 +297,60 @@ public class ListWorkstationsView extends VerticalLayout implements BeforeEnterO
         //Enable/disable navigation buttons dynamically based on database slice info
         prevButton.setEnabled(slice.hasPrevious());
         nextButton.setEnabled(slice.hasNext());
+    }
+
+    private void selectWorkstation(Button workstationButton) {
+        // Apply ShiftLift blue background and yellow border
+        workstationButton.getStyle()
+            .set("background-color", "#156fabff")
+            .set("border", "3px solid #ffc107");
+        
+        // Change text colors to white
+        HorizontalLayout row = (HorizontalLayout) workstationButton.getChildren().findFirst().orElse(null);
+        if (row != null) {
+            row.getChildren().forEach(component -> {
+                if (component instanceof VerticalLayout) {
+                    // Change workstation name and hours text to white
+                    VerticalLayout workstationInfo = (VerticalLayout) component;
+                    workstationInfo.getChildren().forEach(textComponent -> {
+                        if (textComponent instanceof Span) {
+                            textComponent.getStyle().set("color", "white");
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    private void deselectWorkstation(Button workstationButton) {
+        // Reset background and border
+        workstationButton.getStyle()
+            .set("background-color", "white")
+            .set("border", "none");
+        
+        // Reset text colors to original
+        HorizontalLayout row = (HorizontalLayout) workstationButton.getChildren().findFirst().orElse(null);
+        if (row != null) {
+            row.getChildren().forEach(component -> {
+                if (component instanceof VerticalLayout) {
+                    // Reset workstation name and hours text colors
+                    VerticalLayout workstationInfo = (VerticalLayout) component;
+                    workstationInfo.getChildren().forEach(textComponent -> {
+                        if (textComponent instanceof Span) {
+                            Span span = (Span) textComponent;
+                            // Restore original colors based on content
+                            String text = span.getText();
+                            if (text.contains("Not Set") || text.contains(":")) {
+                                // Hours - grey color
+                                span.getStyle().set("color", "#666666");
+                            } else {
+                                // Workstation name - dark color
+                                span.getStyle().set("color", "#00070cff");
+                            }
+                        }
+                    });
+                }
+            });
+        }
     }   
 }
