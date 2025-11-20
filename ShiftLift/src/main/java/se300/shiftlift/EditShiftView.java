@@ -54,15 +54,17 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
     private final UserService userService;
     private final WorkstationService workstationService;
     private final ShiftService shiftService;
+    private final ScheduleService scheduleService;
     private boolean dirty = false;
 
 
 
 
-    public EditShiftView(UserService userService, WorkstationService workstationService, ShiftService shiftService) {
+    public EditShiftView(UserService userService, WorkstationService workstationService, ShiftService shiftService, ScheduleService scheduleService) {
         this.userService = userService;
         this.workstationService = workstationService;
         this.shiftService = shiftService;
+        this.scheduleService = scheduleService;
         currentUser = Auth.getCurrentUser();//Get Current user from Vaadin Session
 
         createElements();
@@ -110,8 +112,7 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
         //Elements setup
         shiftDatePicker.setWidthFull();
         shiftDatePicker.setLabel("Date:");
-        shiftDatePicker.setMin(LocalDate.now());//TODO: change to schedule start date
-        shiftDatePicker.setMax(LocalDate.now().plusDays(30));//TODO: change to schedule end date
+        setDatePickerConstraints();
         shiftDatePicker.getStyle()
             .set("font-family", "Poppins, sans-serif");
 
@@ -212,6 +213,44 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
         getContent().setHorizontalComponentAlignment(Alignment.CENTER, mainContainer); // Center the main container
 
         
+    }
+
+    private void setDatePickerConstraints() {
+        try {
+            var scheduleOpt = scheduleService.getLatestUnpublishedSchedule();
+            
+            if (scheduleOpt.isEmpty()) {
+                // No unpublished schedule found - disable date picker
+                shiftDatePicker.setMin(LocalDate.now().plusYears(100)); // Effectively disable
+                shiftDatePicker.setMax(LocalDate.now().plusYears(100));
+                shiftDatePicker.setHelperText("No unpublished schedule found. Please create a schedule first.");
+                return;
+            }
+            
+            Schedule currentSchedule = scheduleOpt.get();
+            Date startDate = currentSchedule.getStartDate();
+            Date endDate = currentSchedule.getEndDate();
+            
+            if (startDate != null && endDate != null) {
+                LocalDate minDate = LocalDate.of(startDate.get_year(), startDate.get_month(), startDate.get_day());
+                LocalDate maxDate = LocalDate.of(endDate.get_year(), endDate.get_month(), endDate.get_day());
+                
+                shiftDatePicker.setMin(minDate);
+                shiftDatePicker.setMax(maxDate);
+                shiftDatePicker.setHelperText(String.format("Select date between %s and %s", 
+                    minDate.toString(), maxDate.toString()));
+            } else {
+                // Fallback if dates are null
+                shiftDatePicker.setMin(LocalDate.now());
+                shiftDatePicker.setMax(LocalDate.now().plusDays(30));
+                shiftDatePicker.setHelperText("Schedule dates not properly set.");
+            }
+        } catch (Exception e) {
+            // Fallback on error
+            shiftDatePicker.setMin(LocalDate.now());
+            shiftDatePicker.setMax(LocalDate.now().plusDays(30));
+            shiftDatePicker.setHelperText("Error loading schedule dates.");
+        }
     }
 
     private void delete_button_click_listener() {

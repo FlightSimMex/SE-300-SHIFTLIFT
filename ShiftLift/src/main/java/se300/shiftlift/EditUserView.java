@@ -348,10 +348,14 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
             .set("color", "#666666");
         
         com.vaadin.flow.component.button.Button yes = new com.vaadin.flow.component.button.Button("Delete", ev -> {
-            userService.delete(user);
+            int deletedShifts = userService.delete(user);
             confirm.close();
             dirty = false;
-            Notification.show("User deleted", 2000, Notification.Position.BOTTOM_START);
+            String deleteMessage = "User deleted";
+            if (deletedShifts > 0) {
+                deleteMessage += " (" + deletedShifts + " associated shift(s) also removed)";
+            }
+            Notification.show(deleteMessage, 4000, Notification.Position.BOTTOM_START);
             UI.getCurrent().navigate("list-users");
         });
         yes.addThemeVariants(ButtonVariant.LUMO_PRIMARY);

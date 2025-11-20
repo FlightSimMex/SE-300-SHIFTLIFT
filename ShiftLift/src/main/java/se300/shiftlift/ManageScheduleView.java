@@ -129,6 +129,8 @@ public class ManageScheduleView extends Composite<VerticalLayout> implements Bef
         backButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         backButton.addClickListener(e -> UI.getCurrent().navigate("main-menu"));
 
+
+
         layout.add(topBar, title, mainContent, backButton);
         
         // Initialize with empty message
@@ -413,6 +415,8 @@ public class ManageScheduleView extends Composite<VerticalLayout> implements Bef
         QueryParameters qp = new QueryParameters(params);
         UI.getCurrent().navigate("edit-shift", qp);
     }
+
+
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {

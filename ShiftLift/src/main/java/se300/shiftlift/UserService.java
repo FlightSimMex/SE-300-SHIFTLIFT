@@ -9,9 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final ShiftService shiftService;
     
-    UserService(UserRepository userRepository) {
+    UserService(UserRepository userRepository, ShiftService shiftService) {
         this.userRepository = userRepository;
+        this.shiftService = shiftService;
         
     }
 
@@ -110,8 +112,20 @@ public class UserService {
     }
 
     @Transactional
-    public void delete(User user) {
-        if (user == null) return;
+    public int delete(User user) {
+        if (user == null) return 0;
+        
+        // First, delete all shifts associated with this user
+        List<Shift> userShifts = shiftService.getAllShifts().stream()
+            .filter(shift -> shift.getStudentWorker() != null && shift.getStudentWorker().equals(user))
+            .toList();
+        
+        int deletedShiftsCount = userShifts.size();
+        for (Shift shift : userShifts) {
+            shiftService.deleteShift(shift);
+        }
+        
+        // Then delete the user
         userRepository.delete(user);
         userRepository.flush();
         
@@ -135,6 +149,8 @@ public class UserService {
             userRepository.save(sw);
         }
         userRepository.flush();
+        
+        return deletedShiftsCount;
     }
 
     @Transactional(readOnly = true)
