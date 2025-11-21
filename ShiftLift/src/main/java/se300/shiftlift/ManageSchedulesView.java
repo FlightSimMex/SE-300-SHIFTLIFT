@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Div;
@@ -18,13 +20,14 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 
 import jakarta.annotation.security.RolesAllowed;
 
 @PageTitle("Manage Schedules")
 @Route("manage-schedules")
 @RolesAllowed("ADMIN")
-public class ManageSchedulesView extends VerticalLayout implements BeforeEnterObserver {
+public class ManageSchedulesView extends AppLayout implements BeforeEnterObserver {
 
     private final ScheduleService scheduleService;
     private final ShiftService shiftService;
@@ -37,10 +40,74 @@ public class ManageSchedulesView extends VerticalLayout implements BeforeEnterOb
     public ManageSchedulesView(ScheduleService scheduleService, ShiftService shiftService) {
         this.scheduleService = scheduleService;
         this.shiftService = shiftService;
-        setSizeFull();
-        setAlignItems(FlexComponent.Alignment.CENTER);
-        setPadding(true);
-        setSpacing(true);
+        
+        boolean admin = Auth.isAdmin();
+        
+        // Create styled drawer menu
+        VerticalLayout drawerLayout = new VerticalLayout();
+        drawerLayout.setPadding(true);
+        drawerLayout.setSpacing(true);
+        
+        if(admin){
+            // Routes that will be in the hamburger for navigation
+            RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
+            RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
+            RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            
+            // Apply styling to each link
+            styleRouterLink(manageWorkersLink);
+            styleRouterLink(manageWorkstationsLink);
+            styleRouterLink(manageSchedulesLink);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            
+            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, changePasswordLink);
+        }
+        else{
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            drawerLayout.add(mainMenuLink, newShiftLink, changePasswordLink);
+        }
+        
+        addToDrawer(drawerLayout);
+        
+        // Set drawer closed by default
+        setDrawerOpened(false);
+
+        // Creates a hamburger for navigation to other tabs
+        DrawerToggle toggle = new DrawerToggle();
+        toggle.getStyle()
+            .set("color", "#156fabff")
+            .set("background-color", "#f5f5f5")
+            .set("border-radius", "4px");
+
+        // Logout button
+        Button logoutBtn = new Button("Logout");
+        logoutBtn.getStyle()
+            .set("color", "#666666")
+            .set("font-family", "Poppins, sans-serif")
+            .set("margin-right", "20px");
+        logoutBtn.addClickListener(e -> Auth.logoutToLogin());
+
+        // Navbar layout (this is the header)
+        var header = new HorizontalLayout(toggle, logoutBtn);
+        header.setWidthFull();
+        header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
+        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        header.setPadding(true);
+        header.setSpacing(true);
+        header.getStyle()
+            .set("background-color", "white")
+            .set("padding", "16px 20px");
+        addToNavbar(header);
 
         // Title
         H1 title = new H1("Manage Schedules");
@@ -50,18 +117,6 @@ public class ManageSchedulesView extends VerticalLayout implements BeforeEnterOb
             .set("font-size", "48px")
             .set("margin-bottom", "24px");
 
-        // Logout button in top bar
-        Button logoutBtn = new Button("Logout");
-        logoutBtn.getStyle()
-            .set("color", "#666666")
-            .set("font-family", "Poppins, sans-serif");
-        logoutBtn.addClickListener(e -> Auth.logoutToLogin());
-
-        HorizontalLayout topBar = new HorizontalLayout(logoutBtn);
-        topBar.setWidthFull();
-        topBar.setAlignItems(FlexComponent.Alignment.CENTER);
-        topBar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-
         // Create action buttons
         Button returnButton = new Button("Return");
 
@@ -69,7 +124,8 @@ public class ManageSchedulesView extends VerticalLayout implements BeforeEnterOb
         publishButton.getStyle()
             .set("background-color", "#156fabff")
             .set("color", "white")
-            .set("font-family", "Poppins, sans-serif");
+            .set("font-family", "Poppins, sans-serif")
+            .set("transition", "all 0.2s");
         publishButton.setEnabled(false);
         publishButton.getStyle().set("opacity", "0.5"); // Initial greyed out state
 
@@ -81,7 +137,8 @@ public class ManageSchedulesView extends VerticalLayout implements BeforeEnterOb
         discardButton.getStyle()
             .set("background-color", "#dc3545")
             .set("color", "white")
-            .set("font-family", "Poppins, sans-serif");
+            .set("font-family", "Poppins, sans-serif")
+            .set("transition", "all 0.2s");
         discardButton.setEnabled(false);
         discardButton.getStyle().set("opacity", "0.5"); // Initial greyed out state
 
@@ -107,7 +164,8 @@ public class ManageSchedulesView extends VerticalLayout implements BeforeEnterOb
             .set("display", "flex")
             .set("align-items", "center")
             .set("justify-content", "center")
-            .set("margin", "16px auto");
+            .set("margin", "16px auto")
+            .set("transition", "all 0.2s");
         addScheduleButton.addClickListener(e -> UI.getCurrent().navigate("new-schedule"));
 
         // Add button layout - centered
@@ -139,8 +197,25 @@ public class ManageSchedulesView extends VerticalLayout implements BeforeEnterOb
         container.setSpacing(true);
         container.setAlignItems(FlexComponent.Alignment.STRETCH);
 
-        // Add components
-        add(topBar, title, container);
+        // Create content layout
+        VerticalLayout contentLayout = new VerticalLayout(title, container);
+        contentLayout.setWidthFull();
+        contentLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+        contentLayout.setPadding(true);
+        contentLayout.setSpacing(true);
+
+        // Set content for AppLayout
+        setContent(contentLayout);
+    }
+    
+    private void styleRouterLink(RouterLink link) {
+        link.getStyle()
+            .set("color", "#156fabff")
+            .set("font-family", "Poppins, sans-serif")
+            .set("text-decoration", "none")
+            .set("padding", "8px 0")
+            .set("display", "block")
+            .set("font-size", "16px");
     }
 
     @Override

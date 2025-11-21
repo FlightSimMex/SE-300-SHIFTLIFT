@@ -67,6 +67,9 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
         }
         
         addToDrawer(drawerLayout);
+        
+        // Set drawer open by default on main menu
+        setDrawerOpened(true);
 
         // Creates a hamburger for navigation to other tabs
         DrawerToggle toggle = new DrawerToggle();

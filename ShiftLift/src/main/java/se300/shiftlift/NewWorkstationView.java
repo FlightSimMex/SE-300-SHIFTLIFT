@@ -131,9 +131,9 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
         layoutRowButtons.getStyle().set("flex-grow", "1");
         layoutRowButtons.setAlignItems(Alignment.CENTER);
         layoutRowButtons.setJustifyContentMode(JustifyContentMode.CENTER);
-        button_save.setText("Create Workstation");
+        button_save.setText("Save Workstation");
         button_save.setWidth("min-content");
-        button_save.getStyle().set("background-color", "#156fabff");
+        button_save.getStyle().set("background-color", "#156fabff").set("transition", "all 0.2s");
         button_save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         button_save.addClickListener(e -> {
             create_button_click_listener();

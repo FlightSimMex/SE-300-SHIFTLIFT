@@ -7,8 +7,9 @@ import java.util.List;
 
 import org.springframework.data.domain.Pageable;
 
-import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -25,13 +26,14 @@ import com.vaadin.flow.router.BeforeLeaveEvent;
 import com.vaadin.flow.router.BeforeLeaveObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 
 import jakarta.annotation.security.RolesAllowed;
 
 @PageTitle("New Shift")
 @Route("new-shift")
 @RolesAllowed("ALL")
-public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnterObserver, BeforeLeaveObserver {
+public class NewShiftView extends AppLayout implements BeforeEnterObserver, BeforeLeaveObserver {
 
     //Add Attribute Components
     private VerticalLayout mainContainer = new VerticalLayout();
@@ -71,24 +73,79 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
 
     public void createElements()
     {
-        //Setup
-        getContent().setWidth("100%");
-        getContent().getStyle().set("flex-grow", "1");
-        getContent().setAlignItems(Alignment.CENTER); // Center all content horizontally
+        boolean admin = Auth.isAdmin();
+        
+        // Create styled drawer menu
+        VerticalLayout drawerLayout = new VerticalLayout();
+        drawerLayout.setPadding(true);
+        drawerLayout.setSpacing(true);
+        
+        if(admin){
+            // Routes that will be in the hamburger for navigation
+            RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
+            RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
+            RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            
+            // Apply styling to each link
+            styleRouterLink(manageWorkersLink);
+            styleRouterLink(manageWorkstationsLink);
+            styleRouterLink(manageSchedulesLink);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            
+            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, changePasswordLink);
+        }
+        else{
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            drawerLayout.add(mainMenuLink, newShiftLink, changePasswordLink);
+        }
+        
+        addToDrawer(drawerLayout);
+        
+        // Set drawer closed by default
+        setDrawerOpened(false);
 
-        //Logout Button
+        // Creates a hamburger for navigation to other tabs
+        DrawerToggle toggle = new DrawerToggle();
+        toggle.getStyle()
+            .set("color", "#156fabff")
+            .set("background-color", "#f5f5f5")
+            .set("border-radius", "4px");
+
+        // Logout Button
+        Button logoutButton = new Button("Logout");
         logoutButton.getStyle()
             .set("color", "#666666")
-            .set("font-faminly", "Poppins, sans-serif");
+            .set("font-family", "Poppins, sans-serif")
+            .set("margin-right", "20px");
         logoutButton.addClickListener(e -> Auth.logoutToLogin());
-        HorizontalLayout topBar = new HorizontalLayout(logoutButton);
-        topBar.setWidthFull();
-        topBar.setAlignItems(Alignment.CENTER);
-        topBar.setJustifyContentMode(JustifyContentMode.END);
-        topBar.setPadding(false);
-        topBar.setSpacing(false);
-        topBar.getStyle().set("margin", "0");
-        getContent().add(topBar);
+
+        // Navbar layout (this is the header)
+        var header = new HorizontalLayout(toggle, logoutButton);
+        header.setWidthFull();
+        header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        header.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        header.setPadding(true);
+        header.setSpacing(true);
+        header.getStyle()
+            .set("background-color", "white")
+            .set("padding", "16px 20px");
+        addToNavbar(header);
+
+        //Setup - create main content layout
+        VerticalLayout contentLayout = new VerticalLayout();
+        contentLayout.setWidth("100%");
+        contentLayout.getStyle().set("flex-grow", "1");
+        contentLayout.setAlignItems(Alignment.CENTER); // Center all content horizontally
 
         //Title
         title.getStyle()
@@ -98,8 +155,8 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
             .set("text-align", "center")    //center the text
             .set("margin-top", "30px")
             .set("margin-bottom", "30px");
-        getContent().add(title);
-        getContent().setHorizontalComponentAlignment(Alignment.CENTER, title); // Center the title component
+        contentLayout.add(title);
+        contentLayout.setHorizontalComponentAlignment(Alignment.CENTER, title); // Center the title component
         
         //Main Container Setup - limit to 1/3 of screen width and center
         mainContainer.setMaxWidth("33.33vw"); // Max 1/3 of screen width
@@ -187,7 +244,8 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
         addShiftButton.getStyle()
             .set("background-color", "#156fabff")
             .set("color", "white")
-            .set("font-family", "Poppins, sans-serif");
+            .set("font-family", "Poppins, sans-serif")
+            .set("transition", "all 0.2s");
         addShiftButton.addClickListener(e -> save_button_click_listener());
         
         cancelButton.setWidth("calc(50% - 6px)"); // Subtract half the gap
@@ -198,10 +256,21 @@ public class NewShiftView extends Composite<VerticalLayout> implements BeforeEnt
         
         buttonLayout.add(addShiftButton, cancelButton);
         mainContainer.add(buttonLayout);
-        getContent().add(mainContainer);
-        getContent().setHorizontalComponentAlignment(Alignment.CENTER, mainContainer); // Center the main container
+        contentLayout.add(mainContainer);
+        contentLayout.setHorizontalComponentAlignment(Alignment.CENTER, mainContainer); // Center the main container
 
-        
+        // Set content for AppLayout
+        setContent(contentLayout);
+    }
+    
+    private void styleRouterLink(RouterLink link) {
+        link.getStyle()
+            .set("color", "#156fabff")
+            .set("font-family", "Poppins, sans-serif")
+            .set("text-decoration", "none")
+            .set("padding", "8px 0")
+            .set("display", "block")
+            .set("font-size", "16px");
     }
 
     private void setDatePickerConstraints() {

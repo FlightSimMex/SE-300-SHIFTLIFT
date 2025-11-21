@@ -2,12 +2,14 @@ package se300.shiftlift;
 
 import java.time.LocalDate;
 
-import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -16,18 +18,18 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 
 import jakarta.annotation.security.RolesAllowed;
 
 @PageTitle("New Schedule")
 @Route("new-schedule")
 @RolesAllowed("ADMIN")
-public class NewScheduleView extends Composite<VerticalLayout> implements BeforeEnterObserver {
+public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
 
     // UI Components
     private VerticalLayout mainContainer = new VerticalLayout();
     private H1 title = new H1("Create New Schedule");
-    private Button logoutButton = new Button("Logout");
     private Button createScheduleButton = new Button("Create Schedule");
     private Button cancelButton = new Button("Cancel");
     private DatePicker startDatePicker = new DatePicker("Start Date");
@@ -52,24 +54,79 @@ public class NewScheduleView extends Composite<VerticalLayout> implements Before
     }
 
     private void createElements() {
-        // Setup main layout
-        getContent().setWidth("100%");
-        getContent().getStyle().set("flex-grow", "1");
-        getContent().setAlignItems(Alignment.CENTER);
+        boolean admin = Auth.isAdmin();
+        
+        // Create styled drawer menu
+        VerticalLayout drawerLayout = new VerticalLayout();
+        drawerLayout.setPadding(true);
+        drawerLayout.setSpacing(true);
+        
+        if(admin){
+            // Routes that will be in the hamburger for navigation
+            RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
+            RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
+            RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            
+            // Apply styling to each link
+            styleRouterLink(manageWorkersLink);
+            styleRouterLink(manageWorkstationsLink);
+            styleRouterLink(manageSchedulesLink);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            
+            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, changePasswordLink);
+        }
+        else{
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            drawerLayout.add(mainMenuLink, newShiftLink, changePasswordLink);
+        }
+        
+        addToDrawer(drawerLayout);
+        
+        // Set drawer closed by default
+        setDrawerOpened(false);
 
-        // Logout Button - Top Bar
+        // Creates a hamburger for navigation to other tabs
+        DrawerToggle toggle = new DrawerToggle();
+        toggle.getStyle()
+            .set("color", "#156fabff")
+            .set("background-color", "#f5f5f5")
+            .set("border-radius", "4px");
+
+        // Logout Button
+        Button logoutButton = new Button("Logout");
         logoutButton.getStyle()
             .set("color", "#666666")
-            .set("font-family", "Poppins, sans-serif");
+            .set("font-family", "Poppins, sans-serif")
+            .set("margin-right", "20px");
         logoutButton.addClickListener(e -> Auth.logoutToLogin());
-        HorizontalLayout topBar = new HorizontalLayout(logoutButton);
-        topBar.setWidthFull();
-        topBar.setAlignItems(Alignment.CENTER);
-        topBar.setJustifyContentMode(JustifyContentMode.END);
-        topBar.setPadding(false);
-        topBar.setSpacing(false);
-        topBar.getStyle().set("margin", "0");
-        getContent().add(topBar);
+
+        // Navbar layout (this is the header)
+        var header = new HorizontalLayout(toggle, logoutButton);
+        header.setWidthFull();
+        header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
+        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        header.setPadding(true);
+        header.setSpacing(true);
+        header.getStyle()
+            .set("background-color", "white")
+            .set("padding", "16px 20px");
+        addToNavbar(header);
+
+        // Create content layout
+        VerticalLayout contentLayout = new VerticalLayout();
+        contentLayout.setWidth("100%");
+        contentLayout.getStyle().set("flex-grow", "1");
+        contentLayout.setAlignItems(Alignment.CENTER);
 
         // Title
         title.getStyle()
@@ -79,8 +136,8 @@ public class NewScheduleView extends Composite<VerticalLayout> implements Before
             .set("text-align", "center")
             .set("margin-top", "30px")
             .set("margin-bottom", "30px");
-        getContent().add(title);
-        getContent().setHorizontalComponentAlignment(Alignment.CENTER, title);
+        contentLayout.add(title);
+        contentLayout.setHorizontalComponentAlignment(Alignment.CENTER, title);
 
         // Main Container Setup
         mainContainer.setMaxWidth("33.33vw");
@@ -125,7 +182,8 @@ public class NewScheduleView extends Composite<VerticalLayout> implements Before
         createScheduleButton.getStyle()
             .set("background-color", "#156fabff")
             .set("color", "white")
-            .set("font-family", "Poppins, sans-serif");
+            .set("font-family", "Poppins, sans-serif")
+            .set("transition", "all 0.2s");
         createScheduleButton.addClickListener(e -> saveButtonClickListener());
 
         // Cancel Button
@@ -138,8 +196,21 @@ public class NewScheduleView extends Composite<VerticalLayout> implements Before
         buttonLayout.add(createScheduleButton, cancelButton);
         mainContainer.add(buttonLayout);
         
-        getContent().add(mainContainer);
-        getContent().setHorizontalComponentAlignment(Alignment.CENTER, mainContainer);
+        contentLayout.add(mainContainer);
+        contentLayout.setHorizontalComponentAlignment(Alignment.CENTER, mainContainer);
+        
+        // Set content for AppLayout
+        setContent(contentLayout);
+    }
+    
+    private void styleRouterLink(RouterLink link) {
+        link.getStyle()
+            .set("color", "#156fabff")
+            .set("font-family", "Poppins, sans-serif")
+            .set("text-decoration", "none")
+            .set("padding", "8px 0")
+            .set("display", "block")
+            .set("font-size", "16px");
     }
 
     private void saveButtonClickListener() {

@@ -47,7 +47,7 @@ public class LoginView extends VerticalLayout {
         inputUser.addKeyPressListener(Key.ENTER, e -> loginButton.click());
         inputPassword.addKeyPressListener(Key.ENTER, e -> loginButton.click());
             
-        var changePassword = new Button("Change Password");
+        var changePassword = new Button("Forgot Password");
         changePassword.getStyle()
             .set("color", "gray");
         changePassword.setWidth("300px");
