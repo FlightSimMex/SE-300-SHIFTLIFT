@@ -23,8 +23,8 @@ public class Application implements AppShellConfigurator {
                     .anyMatch(u -> u instanceof ManagerUser);
             if (!hasAdmin) {
                 try {
-                    userService.createManagerUser("admin@my.erau.edu", "admin");
-                    System.out.println("Created default admin: admin@my.erau.edu / admin");
+                    userService.createManagerUser("admin@erau.edu", "admin");
+                    System.out.println("Created default admin: admin@erau.edu / admin");
                 } catch (Exception e) {
                     // ignore if already exists or creation fails
                 }

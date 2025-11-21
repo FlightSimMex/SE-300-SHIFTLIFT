@@ -1,41 +1,104 @@
 package se300.shiftlift;
 
+import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 
 @Route("change-password")
-public class ChangePasswordView extends VerticalLayout implements BeforeEnterObserver {
+public class ChangePasswordView extends AppLayout implements BeforeEnterObserver {
 
     @SuppressWarnings("unused")
     private final UserService userService;
 
     public ChangePasswordView(UserService userService) {
         this.userService = userService;
-        setSizeFull();
-        setPadding(true);
-        setSpacing(true);
-        setDefaultHorizontalComponentAlignment(Alignment.CENTER);
+        
+        boolean admin = Auth.isAdmin();
+        
+        // Create styled drawer menu
+        VerticalLayout drawerLayout = new VerticalLayout();
+        drawerLayout.setPadding(true);
+        drawerLayout.setSpacing(true);
+        
+        if(admin){
+            // Routes that will be in the hamburger for navigation
+            RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
+            RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
+            RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            
+            // Apply styling to each link
+            styleRouterLink(manageWorkersLink);
+            styleRouterLink(manageWorkstationsLink);
+            styleRouterLink(manageSchedulesLink);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            
+            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, changePasswordLink);
+        }
+        else{
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            drawerLayout.add(mainMenuLink, newShiftLink, changePasswordLink);
+        }
+        
+        addToDrawer(drawerLayout);
+        
+        // Set drawer closed by default
+        setDrawerOpened(false);
 
-        // Top bar with Logout aligned right
+        // Creates a hamburger for navigation to other tabs
+        DrawerToggle toggle = new DrawerToggle();
+        toggle.getStyle()
+            .set("color", "#156fabff")
+            .set("background-color", "#f5f5f5")
+            .set("border-radius", "4px");
+
+        // Logout Button
         Button logoutBtn = new Button("Logout");
-        logoutBtn.getStyle().set("color", "#666666");
+        logoutBtn.getStyle()
+            .set("color", "#666666")
+            .set("font-family", "Poppins, sans-serif")
+            .set("margin-right", "20px");
         logoutBtn.addClickListener(e -> Auth.logoutToLogin());
-        HorizontalLayout topBar = new HorizontalLayout(logoutBtn);
-        topBar.setWidthFull();
-        topBar.setAlignItems(Alignment.CENTER);
-        topBar.setJustifyContentMode(JustifyContentMode.END);
-        topBar.setPadding(false);
-        topBar.setSpacing(false);
-        topBar.getStyle().set("margin", "0");
+
+        // Navbar layout (this is the header)
+        var header = new HorizontalLayout(toggle, logoutBtn);
+        header.setWidthFull();
+        header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
+        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        header.setPadding(true);
+        header.setSpacing(true);
+        header.getStyle()
+            .set("background-color", "white")
+            .set("padding", "16px 20px");
+        addToNavbar(header);
+
+        // Create content layout
+        VerticalLayout contentLayout = new VerticalLayout();
+        contentLayout.setSizeFull();
+        contentLayout.setPadding(true);
+        contentLayout.setSpacing(true);
+        contentLayout.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
 
         H1 title = new H1("Change Password");
         title.getStyle()
@@ -52,7 +115,7 @@ public class ChangePasswordView extends VerticalLayout implements BeforeEnterObs
 
         Button saveBtn = new Button("Save");
         saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        saveBtn.getStyle().set("background-color", "#156fabff").set("color", "white");
+        saveBtn.getStyle().set("background-color", "#156fabff").set("color", "white").set("transition", "all 0.2s");
         saveBtn.setWidth("300px");
 
         Button cancelBtn = new Button("Cancel");
@@ -62,9 +125,12 @@ public class ChangePasswordView extends VerticalLayout implements BeforeEnterObs
         VerticalLayout form = new VerticalLayout(currentPassword, newPassword, confirmPassword, saveBtn, cancelBtn);
         form.setPadding(false);
         form.setSpacing(true);
-        form.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
+        form.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
 
-        add(topBar, title, form);
+        contentLayout.add(title, form);
+        
+        // Set content for AppLayout
+        setContent(contentLayout);
 
         saveBtn.addClickListener(e -> {
             if (!Auth.isLoggedIn()) {
@@ -96,6 +162,16 @@ public class ChangePasswordView extends VerticalLayout implements BeforeEnterObs
         });
 
         cancelBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(MainMenuView.class)));
+    }
+    
+    private void styleRouterLink(RouterLink link) {
+        link.getStyle()
+            .set("color", "#156fabff")
+            .set("font-family", "Poppins, sans-serif")
+            .set("text-decoration", "none")
+            .set("padding", "8px 0")
+            .set("display", "block")
+            .set("font-size", "16px");
     }
 
     @Override

@@ -230,7 +230,7 @@ public class EditWorkstationView extends Composite<VerticalLayout> implements Be
         layoutRowButtons.setJustifyContentMode(JustifyContentMode.CENTER);
         button_save.setText("Save Changes");
         button_save.setWidth("min-content");
-        button_save.getStyle().set("background-color", "#156fabff");
+        button_save.getStyle().set("background-color", "#156fabff").set("transition", "all 0.2s");
         button_save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         button_save.addClickListener(e -> {
             save_button_click_listener();
@@ -244,7 +244,7 @@ public class EditWorkstationView extends Composite<VerticalLayout> implements Be
         button_delete.setText("Delete Workstation");
         button_delete.setWidth("min-content");
         button_delete.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        button_delete.getStyle().set("background-color", "#9b0000ff");
+        button_delete.getStyle().set("background-color", "#9b0000ff").set("transition", "all 0.2s");
         button_delete.addClickListener(e -> {
             delete_button_click_listener();
         });

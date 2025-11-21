@@ -7,6 +7,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
@@ -21,6 +23,7 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 
 import jakarta.annotation.security.RolesAllowed;
 
@@ -28,7 +31,7 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("List Workstations")
 @Route("list-workstations")
 @RolesAllowed("ADMIN")
-public class ListWorkstationsView extends VerticalLayout implements BeforeEnterObserver {
+public class ListWorkstationsView extends AppLayout implements BeforeEnterObserver {
 
     private final WorkstationService workstationService;
     private final VerticalLayout listLayout = new VerticalLayout();
@@ -44,10 +47,74 @@ public class ListWorkstationsView extends VerticalLayout implements BeforeEnterO
     public ListWorkstationsView(WorkstationService workstatioService)
     {
         this.workstationService = workstatioService;
-        setSizeFull();
-        setAlignItems(FlexComponent.Alignment.CENTER);
-        setPadding(true);
-        setSpacing(true);
+        
+        boolean admin = Auth.isAdmin();
+        
+        // Create styled drawer menu
+        VerticalLayout drawerLayout = new VerticalLayout();
+        drawerLayout.setPadding(true);
+        drawerLayout.setSpacing(true);
+        
+        if(admin){
+            // Routes that will be in the hamburger for navigation
+            RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
+            RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
+            RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            
+            // Apply styling to each link
+            styleRouterLink(manageWorkersLink);
+            styleRouterLink(manageWorkstationsLink);
+            styleRouterLink(manageSchedulesLink);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            
+            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, changePasswordLink);
+        }
+        else{
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            drawerLayout.add(mainMenuLink, newShiftLink, changePasswordLink);
+        }
+        
+        addToDrawer(drawerLayout);
+        
+        // Set drawer closed by default
+        setDrawerOpened(false);
+
+        // Creates a hamburger for navigation to other tabs
+        DrawerToggle toggle = new DrawerToggle();
+        toggle.getStyle()
+            .set("color", "#156fabff")
+            .set("background-color", "#f5f5f5")
+            .set("border-radius", "4px");
+
+        // Logout Button
+        Button logoutButton = new Button("Logout");
+        logoutButton.getStyle()
+            .set("color", "#666666")
+            .set("font-family", "Poppins, sans-serif")
+            .set("margin-right", "20px");
+        logoutButton.addClickListener(e -> Auth.logoutToLogin());
+
+        // Navbar layout (this is the header)
+        var header = new HorizontalLayout(toggle, logoutButton);
+        header.setWidthFull();
+        header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
+        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        header.setPadding(true);
+        header.setSpacing(true);
+        header.getStyle()
+            .set("background-color", "white")
+            .set("padding", "16px 20px");
+        addToNavbar(header);
 
         //Create Tittle and match styling
         H1 title = new H1("Workstations");
@@ -56,15 +123,6 @@ public class ListWorkstationsView extends VerticalLayout implements BeforeEnterO
             .set("font-family", "Poppins, sans-serif")
             .set("font-size", "48px")
             .set("margin-bottom", "24px");
-
-        //Create logout button and add to top bar to the right
-        Button logoutButton = new Button("Logout");
-        logoutButton.getStyle().set("color", "#666666");
-        logoutButton.addClickListener(e -> Auth.logoutToLogin());//Auth.logoutToLogin() is a static method for logging out users found in AAuth.java
-        HorizontalLayout topBar = new HorizontalLayout(logoutButton);
-        topBar.setWidthFull();
-        topBar.setAlignItems(FlexComponent.Alignment.CENTER);
-        topBar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
         
         //Search field
         searchField.setPlaceholder("Search workstations...");
@@ -155,7 +213,7 @@ public class ListWorkstationsView extends VerticalLayout implements BeforeEnterO
 
         //Create Navigation layout for buttons set at bottom
         VerticalLayout bottomLayout = new VerticalLayout(pageLayout, buttonLayout);
-        bottomLayout.setAlignItems(Alignment.CENTER);
+        bottomLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         bottomLayout.setSpacing(true);
         bottomLayout.setPadding(true);
         bottomLayout.getStyle().set("margin-top", "24px");
@@ -184,10 +242,20 @@ public class ListWorkstationsView extends VerticalLayout implements BeforeEnterO
         contentLayout.setPadding(true);
         contentLayout.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        //Top bar needs to be added first to be at the top and match styling of other views
-        add(topBar, backgroundDiv, contentLayout);
+        // Set content for AppLayout
+        setContent(contentLayout);
 
         loadWorkstations(currentQuery, currentPage);
+    }
+    
+    private void styleRouterLink(RouterLink link) {
+        link.getStyle()
+            .set("color", "#156fabff")
+            .set("font-family", "Poppins, sans-serif")
+            .set("text-decoration", "none")
+            .set("padding", "8px 0")
+            .set("display", "block")
+            .set("font-size", "16px");
     }
 
     @Override
@@ -220,7 +288,7 @@ public class ListWorkstationsView extends VerticalLayout implements BeforeEnterO
             workstationInfo.setPadding(false);
             workstationInfo.setSizeFull(); // Take full available space in the row
             workstationInfo.setAlignItems(FlexComponent.Alignment.START);
-            workstationInfo.setJustifyContentMode(JustifyContentMode.CENTER);
+            workstationInfo.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
 
             Span nameSpan = new Span(ws.getName());
             nameSpan.getStyle()
@@ -268,7 +336,8 @@ public class ListWorkstationsView extends VerticalLayout implements BeforeEnterO
                 .set("overflow", "hidden") // Prevent content from sticking out
                 .set("display", "flex")
                 .set("align-items", "center")
-                .set("justify-content", "center"); 
+                .set("justify-content", "center")
+                .set("transition", "all 0.2s"); 
             
             item.addClickListener(e -> {
                 if(selectedItem == item){

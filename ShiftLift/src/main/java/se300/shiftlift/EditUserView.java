@@ -2,7 +2,8 @@ package se300.shiftlift;
 
 import java.util.List;
 
-import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -22,6 +23,7 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility.Gap;
 
 import jakarta.annotation.security.RolesAllowed;
@@ -30,9 +32,10 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("EditUserView")
 @Route("EditUserView")
 @RolesAllowed("ADMIN")
-public class EditUserView extends Composite<VerticalLayout> implements BeforeEnterObserver, com.vaadin.flow.router.BeforeLeaveObserver {
+public class EditUserView extends AppLayout implements BeforeEnterObserver, com.vaadin.flow.router.BeforeLeaveObserver {
 
     
+    private VerticalLayout contentLayout = new VerticalLayout();
     private HorizontalLayout layoutRow3 = new HorizontalLayout();
     private HorizontalLayout layoutRow5 = new HorizontalLayout();
     private VerticalLayout layoutColumn5 = new VerticalLayout();
@@ -170,8 +173,76 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
     }
 
     private void create_elements() {
-        getContent().setWidth("100%");
-        getContent().getStyle().set("flex-grow", "1");
+        boolean admin = Auth.isAdmin();
+        
+        // Create styled drawer menu
+        VerticalLayout drawerLayout = new VerticalLayout();
+        drawerLayout.setPadding(true);
+        drawerLayout.setSpacing(true);
+        
+        if(admin){
+            // Routes that will be in the hamburger for navigation
+            RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
+            RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
+            RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            
+            // Apply styling to each link
+            styleRouterLink(manageWorkersLink);
+            styleRouterLink(manageWorkstationsLink);
+            styleRouterLink(manageSchedulesLink);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            
+            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, changePasswordLink);
+        }
+        else{
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            drawerLayout.add(mainMenuLink, newShiftLink, changePasswordLink);
+        }
+        
+        addToDrawer(drawerLayout);
+        
+        // Set drawer closed by default
+        setDrawerOpened(false);
+
+        // Creates a hamburger for navigation to other tabs
+        DrawerToggle toggle = new DrawerToggle();
+        toggle.getStyle()
+            .set("color", "#156fabff")
+            .set("background-color", "#f5f5f5")
+            .set("border-radius", "4px");
+
+        // Logout Button
+        Button logoutBtn = new Button("Logout");
+        logoutBtn.getStyle()
+            .set("color", "#666666")
+            .set("font-family", "Poppins, sans-serif")
+            .set("margin-right", "20px");
+        logoutBtn.addClickListener(e -> Auth.logoutToLogin());
+
+        // Navbar layout (this is the header)
+        var header = new HorizontalLayout(toggle, logoutBtn);
+        header.setWidthFull();
+        header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        header.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        header.setPadding(true);
+        header.setSpacing(true);
+        header.getStyle()
+            .set("background-color", "white")
+            .set("padding", "16px 20px");
+        addToNavbar(header);
+
+        contentLayout.setWidth("100%");
+        contentLayout.getStyle().set("flex-grow", "1");
         layoutRow3.addClassName(Gap.MEDIUM);
         layoutRow3.setWidth("100%");
         layoutRow3.setHeight("min-content");
@@ -235,7 +306,7 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
         layoutRowButtons.setJustifyContentMode(JustifyContentMode.CENTER);
         button_save.setText("Save Changes");
         button_save.setWidth("min-content");
-        button_save.getStyle().set("background-color", "#156fabff");
+        button_save.getStyle().set("background-color", "#156fabff").set("transition", "all 0.2s");
         button_save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         button_save.addClickListener(e -> {
             save_button_click_listener();
@@ -249,7 +320,7 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
         button_delete.setText("Delete User");
         button_delete.setWidth("min-content");
         button_delete.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        button_delete.getStyle().set("background-color", "#9b0000ff");
+        button_delete.getStyle().set("background-color", "#9b0000ff").set("transition", "all 0.2s");
         button_delete.addClickListener(e -> {
             delete_button_click_listener();
         });
@@ -257,21 +328,9 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
         layoutRow8.addClassName(Gap.MEDIUM);
         layoutRow8.setWidth("100%");
     layoutRow8.setHeight("min-content");
-    // Add a right-aligned top bar for Logout at the very top (to match MainMenu)
-    Button logoutBtn = new Button("Logout");
-    logoutBtn.getStyle().set("color", "#666666");
-    logoutBtn.addClickListener(e -> Auth.logoutToLogin());
-    HorizontalLayout topBar = new HorizontalLayout(logoutBtn);
-    topBar.setWidthFull();
-    topBar.setAlignItems(Alignment.CENTER);
-    topBar.setJustifyContentMode(JustifyContentMode.END);
-    topBar.setPadding(false);
-    topBar.setSpacing(false);
-    topBar.getStyle().set("margin", "0");
-    getContent().add(topBar);
 
-    getContent().add(layoutRow3);
-    getContent().add(layoutRow5);
+    contentLayout.add(layoutRow3);
+    contentLayout.add(layoutRow5);
         layoutRow5.add(layoutColumn5);
         layoutRow5.add(layoutColumn7);
         // keep title centered and with consistent bottom margin
@@ -292,8 +351,20 @@ public class EditUserView extends Composite<VerticalLayout> implements BeforeEnt
     layoutRowButtons.add(button_delete);
     layoutRowButtons.add(layoutRow7);
     layoutRow5.add(layoutColumn9);
-    getContent().add(layoutRow8);
+    contentLayout.add(layoutRow8);
     
+    // Set content for AppLayout
+    setContent(contentLayout);
+    }
+    
+    private void styleRouterLink(RouterLink link) {
+        link.getStyle()
+            .set("color", "#156fabff")
+            .set("font-family", "Poppins, sans-serif")
+            .set("text-decoration", "none")
+            .set("padding", "8px 0")
+            .set("display", "block")
+            .set("font-size", "16px");
     }
 
     private boolean validateFields() {

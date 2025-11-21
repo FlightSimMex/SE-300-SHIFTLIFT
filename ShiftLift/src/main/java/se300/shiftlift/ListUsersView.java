@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.List;
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
@@ -18,13 +20,14 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 
 import jakarta.annotation.security.RolesAllowed;
 
 @PageTitle("List Users")
 @Route("list-users")
 @RolesAllowed("ADMIN")
-public class ListUsersView extends VerticalLayout implements BeforeEnterObserver {
+public class ListUsersView extends AppLayout implements BeforeEnterObserver {
 
     private final UserService userService;
     private final VerticalLayout listLayout = new VerticalLayout();
@@ -38,10 +41,74 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
 
     public ListUsersView(UserService userService) {
         this.userService = userService;
-        setSizeFull();
-        setAlignItems(FlexComponent.Alignment.CENTER);
-        setPadding(true);
-        setSpacing(true);
+        
+        boolean admin = Auth.isAdmin();
+        
+        // Create styled drawer menu
+        VerticalLayout drawerLayout = new VerticalLayout();
+        drawerLayout.setPadding(true);
+        drawerLayout.setSpacing(true);
+        
+        if(admin){
+            // Routes that will be in the hamburger for navigation
+            RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
+            RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
+            RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            
+            // Apply styling to each link
+            styleRouterLink(manageWorkersLink);
+            styleRouterLink(manageWorkstationsLink);
+            styleRouterLink(manageSchedulesLink);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            
+            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, changePasswordLink);
+        }
+        else{
+            RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
+            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
+            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            styleRouterLink(newShiftLink);
+            styleRouterLink(changePasswordLink);
+            styleRouterLink(mainMenuLink);
+            drawerLayout.add(mainMenuLink, newShiftLink, changePasswordLink);
+        }
+        
+        addToDrawer(drawerLayout);
+        
+        // Set drawer closed by default
+        setDrawerOpened(false);
+
+        // Creates a hamburger for navigation to other tabs
+        DrawerToggle toggle = new DrawerToggle();
+        toggle.getStyle()
+            .set("color", "#156fabff")
+            .set("background-color", "#f5f5f5")
+            .set("border-radius", "4px");
+
+        // Logout Button
+        Button logoutBtn = new Button("Logout");
+        logoutBtn.getStyle()
+            .set("color", "#666666")
+            .set("font-family", "Poppins, sans-serif")
+            .set("margin-right", "20px");
+        logoutBtn.addClickListener(e -> Auth.logoutToLogin());
+
+        // Navbar layout (this is the header)
+        var header = new HorizontalLayout(toggle, logoutBtn);
+        header.setWidthFull();
+        header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
+        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        header.setPadding(true);
+        header.setSpacing(true);
+        header.getStyle()
+            .set("background-color", "white")
+            .set("padding", "16px 20px");
+        addToNavbar(header);
 
         H1 title = new H1("Users");
         title.getStyle()
@@ -49,14 +116,6 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
             .set("font-family", "Poppins, sans-serif")
             .set("font-size", "48px")
             .set("margin-bottom", "24px");
-    Button logoutBtn = new Button("Logout");
-    logoutBtn.getStyle().set("color", "#666666");
-    logoutBtn.addClickListener(e -> Auth.logoutToLogin());
-    
-    HorizontalLayout topBar = new HorizontalLayout(logoutBtn);
-    topBar.setWidthFull();
-    topBar.setAlignItems(FlexComponent.Alignment.CENTER);
-    topBar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
 
         searchField.setPlaceholder("Search by username...");
         searchField.setClearButtonVisible(true);
@@ -156,7 +215,7 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
 
         // Create navigation layout at the bottom to hold both button groups
         VerticalLayout bottomLayout = new VerticalLayout(paginationLayout, actionLayout);
-        bottomLayout.setAlignItems(Alignment.CENTER);
+        bottomLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         bottomLayout.setSpacing(true);
         bottomLayout.setPadding(true);
         bottomLayout.getStyle().set("margin-top", "24px");
@@ -180,16 +239,26 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
         });
 
         // Create main content container
-    VerticalLayout contentLayout = new VerticalLayout(title, searchLayout, listLayout, bottomLayout);
+        VerticalLayout contentLayout = new VerticalLayout(title, searchLayout, listLayout, bottomLayout);
         contentLayout.setSizeFull();
         contentLayout.setSpacing(true);
         contentLayout.setPadding(true);
         contentLayout.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        // Add the top bar first so its position matches MainMenu, then background and content
-        add(topBar, background, contentLayout);
+        // Set content for AppLayout
+        setContent(contentLayout);
 
         loadUsers(currentQuery, currentPage);
+    }
+    
+    private void styleRouterLink(RouterLink link) {
+        link.getStyle()
+            .set("color", "#156fabff")
+            .set("font-family", "Poppins, sans-serif")
+            .set("text-decoration", "none")
+            .set("padding", "8px 0")
+            .set("display", "block")
+            .set("font-size", "16px");
     }
 
     @Override
@@ -221,7 +290,7 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
             userInfo.setSpacing(false);
             userInfo.setPadding(false);
             userInfo.setSizeFull(); // Take full available space in the row
-            userInfo.setAlignItems(Alignment.START);
+            userInfo.setAlignItems(FlexComponent.Alignment.START);
             userInfo.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.CENTER);
 
             Span username = new Span(u.getUsername());
@@ -262,7 +331,7 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
             // Place avatar, then expanding userInfo, then label (Manager/seniority) at the far right
             HorizontalLayout row = new HorizontalLayout(avatar, userInfo, labelSpan);
             row.setWidth("560px"); // Slightly narrower than container
-            row.setAlignItems(Alignment.CENTER); // Vertically center all components
+            row.setAlignItems(FlexComponent.Alignment.CENTER); // Vertically center all components
             row.setHeight("80px"); // Match ManageSchedulesView height
             row.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.BETWEEN);
             // Make the middle column expand so the seniority stays aligned to the far right
@@ -294,7 +363,8 @@ public class ListUsersView extends VerticalLayout implements BeforeEnterObserver
                 .set("overflow", "hidden") // Prevent content from sticking out
                 .set("display", "flex")
                 .set("align-items", "center")
-                .set("justify-content", "center");
+                .set("justify-content", "center")
+                .set("transition", "all 0.2s");
 
             item.addClickListener(ev -> {
                 if (selectedItem == item) {
